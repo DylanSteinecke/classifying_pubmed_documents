@@ -1,1 +1,45 @@
-# classifying_pubmed_documents
+# Classifying PubMed Documents
+This repository is for the code to classify PubMed documents. PubMed classifies/labels/categorizes documents with MeSH terms in the document metadata. However, about 15% of PubMed is uncategorized. This is typically because there is not enough information provided in the document 
+
+### pubmed_doc_api.py
+This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the pubmed_other_docs_api.py.
+
+Example Usage:
+```
+topic = 'hf'
+
+! python pubmed_doc_api.py --get_docs_on_pubmed\
+                           --get_pmids_via_mesh\
+                           --categories 'input/categories_list_of_list_of_tree_numbers_'$topic'.json'\
+                           --cats_of_pmids 'output/category_of_pmids_'$topic'.csv'\
+                           --pmid_to_cat 'output/pmid_to_category_'$topic'.json'\
+                           --ft_mtrx_pth 'output/feature_matrix_'$topic'.csv'\
+                           --max_num_docs 999999
+```
+
+Flags
+```
+--categories, -c : the user must create this file, a list of lists of MeSH tree numbers denoting the topics to be studied.
+--get_docs_on_pubmed : include this flag if you want to get the PubMed documents
+--get_pmids_via_mesh : include this flag if you want to get PubMed documents studying your MeSH terms. Don't include it if you have a predefined set of PMIDs you want.
+--ft_mtrx_path : use this to define the output path for the PubMed documents
+--max_num_docs : use this to choose the max number of documents you want per topic
+```
+
+### pubmed_other_docs_api.py
+This script also obtains PubMed documents (titles + abstracts) via an API. However, these documents are a user-chosen number of documents *not* studying your topics of interst as shown. This is used for training the model to discriminate between your topics and other topics it will see when you use the document classifier on unlabeled/uncategorized documents. This relies on the previous API, pubmed_doc_api.py, assuming that it has been run on your topic. This API will use that API's output as input, automatically searching for files created in the first API. 
+Example Usage:
+```
+topic = 'hf'
+! python pubmed_other_docs_api.py --topic $topic \
+                                  --num_random_pmids 10000 -m2 
+```
+Flags:
+```
+--topic : specify the topic you are studying. Make sure it matches the name of a topic you have used to run the first API.
+--num_random_pmids : specify the number of random PMIDs to use. The script will pick this many random PMIDs, remove any PMIDs that are known to study your topics, and then submit those PMIDs to the pubmed_doc_api.py to retrieve PubMed documents (titles + abstracts) which have been labeled as studying topics other than your topic(s) of interest.
+--max_pmid : this is the largest PMID to consider. This is a way to choose PMIDs from a certain date range, because older PMIDs are more likely to have been labeled. Currently, PMIDs prior to 37000000 are more labeled (11/9/23).
+--min_pmid : this is the smallest PMID to consider. This is similar to above, but its purpose is for when you want to find more recent and unlabeled documents. For example, set it to 3700000 to find the more recent documents.
+-m1 : a behind-the-scenes way to merge the data with dataframes
+-m2 : a behind-the-scenes way to merge the data (just pick this one)
+```
