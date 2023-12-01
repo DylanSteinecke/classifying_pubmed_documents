@@ -206,6 +206,8 @@ def extract_pmid_title_abstract(queried_pmids,
                                 retmax,
                                 get_docs_on_pubmed,
                                 get_pmids_via_mesh,
+                                get_unlabeled_docs,
+                                get_labeled_docs=True,
                                 verbose=True):
     num_pmids, num_titles, num_abstracts = 0, 0, 0
     
@@ -235,11 +237,17 @@ def extract_pmid_title_abstract(queried_pmids,
                 ### Check whether the document has been MeSH-labeled
                 if get_docs_on_pubmed and not get_pmids_via_mesh:
                     if 'MeshHeadingList' in pmid_split_xml:
-                        # labeled document
-                        pass
+                        # it's a labeled document
+                        if get_labeled_docs:
+                            pass
+                        elif get_unlabeled_docs:
+                            continue                            
                     else:
-                        # unlabeled document
-                        continue
+                        # it's an unlabeled document
+                        if get_labeled_docs:
+                            continue
+                        elif get_unlabeled_docs:
+                            pass
                 
                 ### Extract PMID
                 pmid = pmid_split_xml.split('</PMID>')[0] 
@@ -287,7 +295,7 @@ def extract_pmid_title_abstract(queried_pmids,
                         if no_title:
                             continue
                    
-                ### Topic Labels
+                ### MeSH Topic Labels
                 try:
                     categories = list(set(pmid_to_categories[pmid]))
                     topic_labels = [str(cat_num) for cat_num in categories]
@@ -325,6 +333,10 @@ if __name__ == '__main__':
                         type=str, default='output/feature_matrix.csv')
     parser.add_argument('--max_num_docs', '-max',
                         type=int, default=99999999999999)
+    parser.add_argument('--get_offtopic_docs', '-off',
+                   action='store_true', default=False)    
+    parser.add_argument('--get_unlabeled_docs', '-unlab',
+                   action='store_true', default=False)
     args = parser.parse_args()
     get_docs_on_pubmed = args.get_docs_on_pubmed
     get_pmids_via_mesh = args.get_pmids_via_mesh 
@@ -334,6 +346,8 @@ if __name__ == '__main__':
     categories_of_pmids_path = args.cats_of_pmids # specify if retrieving PMIDs via MeSH
     pmid_to_categories_path = args.pmid_to_cat    # specify if not retreiving PMIDs via MeSH or you want to save a new one
     max_num_docs = args.max_num_docs              # maximum number of documents
+    get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
+    get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
     
 
     if get_pmids_via_mesh:        
@@ -367,6 +381,8 @@ if __name__ == '__main__':
                                     batch_size,
                                     get_docs_on_pubmed,
                                     get_pmids_via_mesh,
+                                    get_unlabeled_docs,
+                                    get_labeled_docs,
                                     verbose=True) 
         
         
