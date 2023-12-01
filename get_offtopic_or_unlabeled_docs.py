@@ -35,14 +35,14 @@ def get_offtopic_or_unlabeled_documents(num_random_pmids, topic, get_offtopic_do
     if get_offtopic_docs:
         pmid_to_offtopic_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_non_{topic}.json'
         offtopic_feature_matrix_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
-        os.system('python get_pubmed_docs.py --get_docs_on_pubmed '+\
+        os.system('python get_pubmed_docs.py --get_pubmed_docs '+\
                                           f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
                                           f'--ft_mtrx_pth {offtopic_feature_matrix_path}'+\
                                           f'--get_offtopic_docs')
     elif get_unlabeled_docs:
         pmid_to_unlabeled_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_unlabeled__({topic} study).json'
         unlabeled_feature_matrix_path = f'output/feature_matrix_less_than_{num_random_pmids}_unlabeled_({topic}).csv'
-        os.system('python get_pubmed_docs.py --get_docs_on_pubmed '+\
+        os.system('python get_pubmed_docs.py --get_pubmed_docs '+\
                                           f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
                                           f'--ft_mtrx_pth {offtopic_feature_matrix_path}'+\
                                           f'--get_unlabeled_topic_docs')
