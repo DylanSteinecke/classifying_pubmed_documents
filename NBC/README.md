@@ -13,19 +13,21 @@ First, clone the repository or download the NBC.py script and the requirements.t
 
 **Input Data Format**
 
-To train the model, the script expects a CSV file as input with specific columns:
+To train the model, the script expects a CSV file as input with specific columns (it is okay to have other columns in addition to this) :
 
-**title:** Title of the PubMed document.
+	title: Title of the PubMed document.
 
-**abstract:** Abstract of the document.
+	abstract: Abstract of the document.
 
-**topic_labels:** Labels indicating the document's category.
+	topic_labels: Integer labels indicating the document's category. (e.g. 0,1,2,3) 
+ 
+IMPORTANT: 
 
-**Run Modes:** 
-    NBC.py supports two primary run modes:
-	
-    train_test: This mode trains the Naive Bayes Classifier on a provided dataset and evaluates its performance on a test split.
-    predict_unlabeled: In this mode, the Classifier is first trained and evaluated on the train test split and then the model is used to predict the categories of unlabeled documents.
+	The NBC classifier is structured as a binary classifier, effectively categorizing documents into two distinct groups. All documents not tagged as "off topic" are consolidated under a single label. For example, documents labeled as 'diastolic heart failure' and 'systolic heart failure', labeled as 1 and 2, would both be reclassified as label 1. Conversely, any document identified as 'off topic' would be uniformly reassigned the label 0. This process ensures a clear binary division in the dataset, with one label for relevant topics and another for off-topic content.
+
+To make predictions on unlabeled abstracts, the scrip expects a CSV file as input with one specific column (it is okay to have other columns in addition to this) : 
+
+	abstract: Abstract of the document.
 
 **Command-Line Arguments**
 
@@ -37,27 +39,44 @@ The script accepts several command-line arguments to control its behavior:
 	--out_path (default='./output'): The directory where output files will be saved.
 	--unlabeled_docs_path: Path for the CSV file containing unlabeled documents (required for predict_unlabeled mode).
 	--run_mode (required): The mode to run the script in, either train_test or predict_unlabeled.
+ 	
+  	Run Modes:
+    		train_test: This mode trains the Naive Bayes Classifier on a provided dataset and evaluates its performance on a test split.
+    		predict_unlabeled: In this mode, the Classifier is first trained and evaluated on the train test split and then the model is used to predict the categories of unlabeled documents.
  
-How to Run
-To execute the script, navigate to the directory containing NBC.py and run it via the terminal. Here are example commands for each mode:
+**EXAMPLE**
 
-For train_test mode:
+TRAIN TEST MODE 
 
-css
-Copy code
-python NBC.py --run_mode train_test --input_path path/to/input.csv --off_topic_class 0
-For predict_unlabeled mode:
+```
+python ./NBC/NBC.py \
+  --run_mode train_test \
+  --input_path /content/feature_matrix_7810_non_hf_4426_hf.csv \
+  --off_topic_class 5
+```
 
-css
-Copy code
-python NBC.py --run_mode predict_unlabeled --input_path path/to/input.csv --off_topic_class 0 --unlabeled_docs_path path/to/unlabeled_docs.csv
-Output
+PREDICT UNlABELED MODE 
+
+```
+python ./NBC/NBC.py \
+  --run_mode predict_unlabeled \
+  --input_path /content/feature_matrix_7810_non_hf_4426_hf.csv \
+  --off_topic_class 5 \
+  --unlabeled_docs_path /content/unlabeled.csv
+```
+
+**OUTPUT**
 The script generates various outputs based on the chosen mode, including:
 
 Word counts and log likelihoods for each class.
+
 Classification reports and confusion matrices for the train_test mode.
+
+A CSV file of the documents in the test split that were predicted to be on topic. 
+
 Predicted categories for unlabeled documents in predict_unlabeled mode.
+
 All outputs are saved in the directory specified by --out_path.
 
-Additional Information
-Ensure that your input CSV files are correctly formatted as per the Input Data Format section. For best results, clean and pre-process your data accordingly.
+
+
