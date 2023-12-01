@@ -114,7 +114,7 @@ def map_seed_tree_numbers_to_seed_terms(seed_tree_numbers, tree_to_term):
     return all_seeds_terms
     
 
-def retrieve_topic_studying_pmids(categories_of_terms, 
+def retrieve_ontopic_pmids(categories_of_terms, 
                                   cat_of_pmid_path,
                                   pmid_to_cat_path,
                                   max_num_pmids=99999999999):
@@ -296,13 +296,16 @@ def extract_pmid_title_abstract(queried_pmids,
                             continue
                    
                 ### MeSH Topic Labels
-                try:
-                    categories = list(set(pmid_to_categories[pmid]))
-                    topic_labels = [str(cat_num) for cat_num in categories]
-                except:
-                    if pmid in pmid_batch:
-                        print(pmid in pmid_batch,' Alarm: Problem with pmid_to_categories. PMID in queried PMIDs:')
-
+                if get_labeled_docs:
+                    try:
+                        categories = list(set(pmid_to_categories[pmid]))
+                        topic_labels = [str(cat_num) for cat_num in categories]
+                    except:
+                        if pmid in pmid_batch:
+                            print(pmid in pmid_batch,' Alarm: Problem with pmid_to_categories. PMID in queried PMIDs:')
+                elif get_unlabeled_docs:
+                    topic_labels = 'nan'
+                    
                 ### Final (Features || Labels)
                 writer.writerow([pmid, title, abstract, ','.join(topic_labels)])
             os.remove(f'output/response_text_{batch_num}.json')
@@ -348,7 +351,6 @@ if __name__ == '__main__':
     max_num_docs = args.max_num_docs              # maximum number of documents
     get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
     get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
-    
 
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
@@ -363,7 +365,7 @@ if __name__ == '__main__':
         seed_terms = map_seed_tree_numbers_to_seed_terms(seed_tree_numbers, tree_to_term)  # Collects descendant terms
 
         # Download the categories' PubMed IDs via an API
-        retrieve_topic_studying_pmids(seed_terms, 
+        retrieve_ontopic_pmids(seed_terms, 
                                       categories_of_pmids_path,
                                       pmid_to_categories_path,
                                       max_num_docs) 
