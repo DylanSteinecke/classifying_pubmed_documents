@@ -5,9 +5,9 @@ import json
 import os
 import argparse
 
-def get_pmids_of_other_categories(topic, num_random_pmids, max_pmid_number):
+def get_pmids_of_offtopic_categories(topic, num_random_pmids, max_pmid_number):
     print('Getting the PMIDs of the "other" category documents...')
-    feature_matrix_for_main_categories_path = f'output/feature_matrix_{topic}.csv'
+    feature_matrix_for_ontopic_categories_path = f'output/feature_matrix_{topic}.csv'
     categories_of_interest_path = f'input/categories_list_of_list_of_tree_numbers_{topic.split("_")[0]}.json'
     pmids_of_categories_path = f'output/pmid_to_category_{topic}.json'
     pmids_not_of_categories_to_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_non_{topic}.json'
@@ -22,23 +22,23 @@ def get_pmids_of_other_categories(topic, num_random_pmids, max_pmid_number):
     print('Done!')
         
         
-def get_other_category_documents(num_random_pmids, topic):
+def get_offtopic_category_documents(num_random_pmids, topic):
     '''Download random "other category" documents'''
     print('Downloading the "other" category documents...(output will be displayed at the end of function execution)')
-    pmid_to_other_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_non_{topic}.json'
-    other_feature_matrix_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
-    os.system('python get_ontopic_docs.py --get_docs_on_pubmed '+\
-                                      f'--pmid_to_cat {pmid_to_other_categories_path} '+\
-                                      f'--ft_mtrx_pth {other_feature_matrix_path}')
+    pmid_to_offtopic_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_non_{topic}.json'
+    offtopic_feature_matrix_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
+    os.system('python get_pubmed_docs.py --get_docs_on_pubmed '+\
+                                      f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
+                                      f'--ft_mtrx_pth {offtopic_feature_matrix_path}')
     print('Done!')
     
         
-def merge_main_and_other_feature_matrices(topic, merge_matrix_option_1, merge_matrix_option_2):
+def merge_ontopic_and_offtopic_feature_matrices(topic, merge_matrix_option_1, merge_matrix_option_2):
     print('Combining the main categories and other category feature matrices...')
-    feature_matrix_for_main_categories_path = f'output/feature_matrix_{topic}.csv'
-    num_topic_pmids = len(pd.read_csv(feature_matrix_for_main_categories_path))
-    feature_matrix_for_other_category_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
-    actual_num_random_pmids = len(pd.read_csv(feature_matrix_for_other_category_path))
+    feature_matrix_for_ontopic_categories_path = f'output/feature_matrix_{topic}.csv'
+    num_topic_pmids = len(pd.read_csv(feature_matrix_for_ontopic_categories_path))
+    feature_matrix_for_offtopic_category_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
+    actual_num_random_pmids = len(pd.read_csv(feature_matrix_for_offtopic_category_path))
     combined_feature_matrix_path = f'output/feature_matrix_{actual_num_random_pmids}_non_{topic}_{num_topic_pmids}_{topic}.csv'
 
     if merge_matrix_option_1:
@@ -47,25 +47,25 @@ def merge_main_and_other_feature_matrices(topic, merge_matrix_option_1, merge_ma
         This alternates the rows between main and other categories, as long as there are
         enough rows from each matrix. Assumes there are more 'other' rows.
         '''
-        main_matrix = pd.read_csv(feature_matrix_for_main_categories_path)
-        other_matrix = pd.read_csv(feature_matrix_for_other_category_path)
+        ontopic_matrix = pd.read_csv(feature_matrix_for_ontopic_categories_path)
+        other_matrix = pd.read_csv(feature_matrix_for_offtopic_category_path)
 
         with open(combined_feature_matrix_path, 'w') as fout:
             writer = csv.writer(fout)
 
             # Writes headers
-            headers = main_matrix.columns.tolist()
+            headers = ontopic_matrix.columns.tolist()
             writer.writerow(headers)
 
             # Alternates between main categories (e.g., HF) and other categories
-            for idx in range(0,len(main_matrix)):
-                main_row = main_matrix.iloc[idx].tolist()
+            for idx in range(0,len(ontopic_matrix)):
+                ontopic_row = ontopic_matrix.iloc[idx].tolist()
                 other_row = other_matrix.iloc[idx].tolist()
-                writer.writerow(main_row)
+                writer.writerow(ontopic_row)
                 writer.writerow(other_row) 
 
             # Writes the rest of the other categories
-            for idx in range(len(main_matrix), len(other_matrix)):
+            for idx in range(len(ontopic_matrix), len(other_matrix)):
                 other_row = other_matrix.iloc[idx].tolist()
                 writer.writerow(other_row) 
 
@@ -76,11 +76,11 @@ def merge_main_and_other_feature_matrices(topic, merge_matrix_option_1, merge_ma
         the working memory
         '''
         with open(combined_feature_matrix_path, 'w') as fout:
-            with open(feature_matrix_for_main_categories_path) as fin:
+            with open(feature_matrix_for_ontopic_categories_path) as fin:
                 for idx, line in enumerate(fin):
                     fout.write(line)
 
-            with open(feature_matrix_for_other_category_path) as fin:
+            with open(feature_matrix_for_offtopic_category_path) as fin:
                 for idx, line in enumerate(fin):
                     if idx == 0: # skip column headers (already included above)
                         continue
@@ -99,12 +99,12 @@ def merge_main_and_other_feature_matrices(topic, merge_matrix_option_1, merge_ma
     
     
 if __name__ == '__main__':
-    # Be sure to run the get_ontopic_docs.py first for the topic of interest. This current file
+    # Be sure to run the get_pubmed_docs.py first for the topic of interest. This current file
     # relies on the output from that previous API.
     '''
     Example of first PubMed API
     topic = 'hf'
-    ! python get_ontopic_docs.py --get_docs_on_pubmed\
+    ! python get_pubmed_docs.py --get_docs_on_pubmed\
                                --get_pmids_via_mesh\
                                --categories f'input/categories_list_of_list_of_tree_numbers_{topic}.json'\
                                --cats_of_pmids f'output/category_of_pmids_{topic}.csv'\
@@ -142,8 +142,8 @@ if __name__ == '__main__':
     # add enough pmids to match the number specified ?
     
     
-    get_pmids_of_other_categories(topic, num_random_pmids, max_pmid_number)
-    get_other_category_documents(num_random_pmids, topic)                        
-    merge_main_and_other_feature_matrices(topic, 
+    get_pmids_of_offtopic_categories(topic, num_random_pmids, max_pmid_number)
+    get_offtopic_category_documents(num_random_pmids, topic)                        
+    merge_ontopic_and_offtopic_feature_matrices(topic, 
                                           merge_matrix_option_1, 
                                           merge_matrix_option_2)    
