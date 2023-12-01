@@ -1,4 +1,5 @@
-Overview
+**Overview**
+
 NBC.py is a Python script implementing a Naive Bayes Classifier (NBC) tailored for categorizing PubMed documents. It is designed to classify documents into specified categories based on their content, particularly useful in biomedical literature analysis.
 
 Prerequisites
