@@ -2,34 +2,42 @@
 
 NBC.py is a Python script implementing a Naive Bayes Classifier (NBC) tailored for categorizing PubMed documents. It is designed to classify documents into specified categories based on their content, particularly useful in biomedical literature analysis.
 
-Prerequisites
+**Prerequisites**
+
 Before running the script, ensure you have Python installed on your system. The script has been tested with Python 3.8+. Additionally, the required Python packages can be installed via the requirements.txt file.
 
-Installation
+**Installation**
 First, clone the repository or download the NBC.py script and the requirements.txt file. Install the necessary dependencies by running:
 
-Copy code
-pip install -r requirements.txt
-Input Data Format
-The script expects a CSV file as input with specific columns:
+```pip install -r requirements.txt```
 
-title: Title of the PubMed document.
-abstract: Abstract of the document.
-topic_labels: Labels indicating the document's category.
-Run Modes
-NBC.py supports two primary run modes:
+**Input Data Format**
 
-train_test: This mode trains the Naive Bayes Classifier on a provided dataset and evaluates its performance on a test split.
-predict_unlabeled: In this mode, the script predicts the categories of unlabeled documents.
-Command-Line Arguments
+To train the model, the script expects a CSV file as input with specific columns:
+
+**title:** Title of the PubMed document.
+
+**abstract:** Abstract of the document.
+
+**topic_labels:** Labels indicating the document's category.
+
+**Run Modes:** 
+    NBC.py supports two primary run modes:
+	
+    train_test: This mode trains the Naive Bayes Classifier on a provided dataset and evaluates its performance on a test split.
+    predict_unlabeled: In this mode, the Classifier is first trained and evaluated on the train test split and then the model is used to predict the categories of unlabeled documents.
+
+**Command-Line Arguments**
+
 The script accepts several command-line arguments to control its behavior:
 
---num_classes (default=2): The number of classes for classification.
---off_topic_class: Specifies the class representing documents not in the disease of interest.
---input_path: The path to the input CSV file containing labeled data.
---out_path (default='./output'): The directory where output files will be saved.
---unlabeled_docs_path: Path for the CSV file containing unlabeled documents (required for predict_unlabeled mode).
---run_mode (required): The mode to run the script in, either train_test or predict_unlabeled.
+	--num_classes (default=2): The number of classes for classification.
+	--off_topic_class: Specifies the class representing documents not in the disease of interest.
+	--input_path: The path to the input CSV file containing labeled data.
+	--out_path (default='./output'): The directory where output files will be saved.
+	--unlabeled_docs_path: Path for the CSV file containing unlabeled documents (required for predict_unlabeled mode).
+	--run_mode (required): The mode to run the script in, either train_test or predict_unlabeled.
+ 
 How to Run
 To execute the script, navigate to the directory containing NBC.py and run it via the terminal. Here are example commands for each mode:
 
