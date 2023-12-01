@@ -3,14 +3,14 @@ This repository is for the code to classify PubMed documents. PubMed classifies/
 
 ## Document Download
 
-### pubmed_doc_api.py
-This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the pubmed_other_docs_api.py.
+### get_ontopic_docs.py
+This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the get_offtopic_docs.py.
 
 Example Usage:
 ```
 topic = 'hf'
 
-! python pubmed_doc_api.py --get_docs_on_pubmed\
+! python get_ontopic_docs.py --get_docs_on_pubmed\
                            --get_pmids_via_mesh\
                            --categories 'input/categories_list_of_list_of_tree_numbers_'$topic'.json'\
                            --cats_of_pmids 'output/category_of_pmids_'$topic'.csv'\
@@ -29,18 +29,18 @@ Flags
 ```
 
 
-### pubmed_other_docs_api.py
-This script also obtains PubMed documents (titles + abstracts) via an API. However, these documents are a user-chosen number of documents *not* studying your topics of interst as shown. This is used for training the model to discriminate between your topics and other topics it will see when you use the document classifier on unlabeled/uncategorized documents. This relies on the previous API, pubmed_doc_api.py, assuming that it has been run on your topic. This API will use that API's output as input, automatically searching for files created in the first API. 
+### get_offtopic_docs.py
+This script also obtains PubMed documents (titles + abstracts) via an API. However, these documents are a user-chosen number of documents *not* studying your topics of interst as shown. This is used for training the model to discriminate between your topics and other topics it will see when you use the document classifier on unlabeled/uncategorized documents. This relies on the previous API, get_ontopic_docs.py, assuming that it has been run on your topic. This API will use that API's output as input, automatically searching for files created in the first API. 
 Example Usage:
 ```
 topic = 'hf'
-! python pubmed_other_docs_api.py --topic $topic \
+! python get_offtopic_docs.py --topic $topic \
                                   --num_random_pmids 10000 -m2 
 ```
 Flags:
 ```
 --topic : specify the topic you are studying. Make sure it matches the name of a topic you have used to run the first API.
---num_random_pmids : specify the number of random PMIDs to use. The script will pick this many random PMIDs, remove any PMIDs that are known to study your topics, and then submit those PMIDs to the pubmed_doc_api.py to retrieve PubMed documents (titles + abstracts) which have been labeled as studying topics other than your topic(s) of interest.
+--num_random_pmids : specify the number of random PMIDs to use. The script will pick this many random PMIDs, remove any PMIDs that are known to study your topics, and then submit those PMIDs to the get_ontopic_docs.py to retrieve PubMed documents (titles + abstracts) which have been labeled as studying topics other than your topic(s) of interest.
 --max_pmid : this is the largest PMID to consider. This is a way to choose PMIDs from a certain date range, because older PMIDs are more likely to have been labeled. Currently, PMIDs prior to 37000000 are more labeled (11/9/23).
 --min_pmid : this is the smallest PMID to consider. This is similar to above, but its purpose is for when you want to find more recent and unlabeled documents. For example, set it to 3700000 to find the more recent documents.
 -m1 : a behind-the-scenes way to merge the data with dataframes
@@ -56,4 +56,4 @@ This applies a preliminary document classifier. (Naive Bayesian Classifier) It i
 This is the transformer-based language model that is fine-tuned to classify documents by topic. The training and testing is implemented in PyTorch. Users can specify the model, epochs, etc. 
 
 ### run_document_classifier.py
-This runs the entire pipeline to download on-topic (pubmed_doc_api.py) and off-topic (pubmed_other_docs_api.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
+This runs the entire pipeline to download on-topic (get_ontopic_docs.py) and off-topic (get_offtopic_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
