@@ -1,6 +1,7 @@
 # Classifying PubMed Documents
 This repository is for the code to classify PubMed documents. PubMed classifies/labels/categorizes documents with MeSH terms in the document metadata. However, about 15% of PubMed is uncategorized. This is typically because there is not enough information provided in the document 
 
+## Document Download
 
 ### pubmed_doc_api.py
 This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the pubmed_other_docs_api.py.
@@ -46,12 +47,13 @@ Flags:
 -m2 : a behind-the-scenes way to merge the data (just pick this one)
 ```
 
+## Document Classification
+
+### pre_filter_document_classifier.py [In progress]
+This applies a preliminary document classifier. (Naive Bayesian Classifier) It is intended to have high on-topic recall and moderate precision, intending to filter out the off-topic documents. By this we mean that the documents studying topics that you have not chosen (e.g., other than 3 types of heart failure) will be filtered out. They will then be fed to the ostensibly high precision PyTorch-based transformer language model classifier which will categorize the documents by topic. This step is important because there is a massive class imbalance for most small sets of topics compared to all other topics (e.g., ~5,000 documents on any type of heart failure, ~38,000,000 documents on all other topics), so by filtering out the majority of the off-topic documents, it can not only expedite but also improve the final classifier. 
+
 ### pytorch_document_classifier.py
 This is the transformer-based language model that is fine-tuned to classify documents by topic. The training and testing is implemented in PyTorch. Users can specify the model, epochs, etc. 
 
-
 ### run_document_classifier.py
-This runs the entire pipeline to download on-topic (pubmed_doc_api) and off-topic (pubmed_other_docs_api.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
-
-### pre_filter_document_classifier.py [In progress]
-This applies a preliminary document classifier. (Naive Bayesian Classifier) It is intended to have high on-topic recall and moderate precision, intending to filter out the off-topic documents. By this we mean that the documents studying topics that you have not chosen (e.g., 5 types of heart failure) will be filtered out. They will then be fed to the ostensibly high precision PyTorch-based language model classifier which will categorize the documents by topic. This step is important because there is a massive class imbalance for most topics compared to all other topics (e.g., ~5,000 documents on any type of heart failure, ~38,000,000 documents on all other topics), so by filtering out the majority of the off-topic documents, it can not only expedite but also improve the final classifier. 
+This runs the entire pipeline to download on-topic (pubmed_doc_api.py) and off-topic (pubmed_other_docs_api.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
