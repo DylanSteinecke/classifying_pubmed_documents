@@ -22,7 +22,7 @@ def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=-1, max_pmid=9
         label = -1
         pmids = list(range(min_pmid, num_of_pmids))
     pmids_of_categories = list(json.load(open(pmids_of_categories_path)).keys())
-    pmids_not_of_categories = list(set(random_pmids).difference(set(pmids_of_categories)))
+    pmids_not_of_categories = list(set(pmids).difference(set(pmids_of_categories)))
     pmids_not_of_categories_to_categories = {pmid:[label] for pmid in pmids_not_of_categories}
     with open(pmids_not_of_categories_to_categories_path,'w') as fout:
         json.dump(pmids_not_of_categories_to_categories, fout)
@@ -30,7 +30,7 @@ def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=-1, max_pmid=9
         
         
 def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, get_unlabeled_docs):
-    '''Download random "other category" documents'''
+    '''Download documents'''
     print('Downloading the "other" category documents...(output will be displayed at the end of function execution)')
 
     if get_offtopic_docs:
@@ -107,7 +107,7 @@ def merge_ontopic_and_offtopic_feature_matrices(topic, merge_matrix_option_1, me
         print('Specify a merging strategy')
         return
     
-    with open(f'output/{topic}_feature_matrix_path.txt','w') as fout:
+    with open(f'output/{topic}_entire_ground_truth_feature_matrix_path.txt','w') as fout:
         fout.write(combined_feature_matrix_path)
     
     print('Done!')
