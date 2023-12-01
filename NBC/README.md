@@ -66,6 +66,7 @@ python ./NBC/NBC.py \
 ```
 
 **OUTPUT**
+
 The script generates various outputs based on the chosen mode, including:
 
 Word counts and log likelihoods for each class.
