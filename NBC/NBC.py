@@ -178,7 +178,7 @@ class NBC:
 
       ### Output csv of test docs that were predicted to be on topic
       on_topic_pred = self.df[self.df.index.isin(self.hf_pred_docs)]
-      on_topic_pred.to_csv(f'{self.directory}/test_docs_pred_on_topic.csv')
+      on_topic_pred.to_csv(f'{self.directory}/test_docs_pred_ontopic.csv')
 
       #### Output the prediction metrics into a txt file #####
       output_filename = 'test_prediction_metrics.txt'
