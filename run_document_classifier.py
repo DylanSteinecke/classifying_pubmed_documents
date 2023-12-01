@@ -28,10 +28,14 @@ def choose_least_utilized_gpu():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process input for data download')
     parser.add_argument('--topic', type=str, help='Topic name')                                                                            # Must specify
-    parser.add_argument('--download', type=str, default='n', help='Download new data (y/n)')
+    parser.add_argument('--download', action='store_true', default=False, help='Download new data')
     parser.add_argument('--num_ontopic_topic_docs', type=int, help='Max number of documents in each ontopic category')                     # Must specify
     parser.add_argument('--num_offtopic_docs', type=int, help='Number of offtopic documents')                                              # Must specify
     parser.add_argument('--num_unlabeled_docs', type=int, help='Number of unlabeled documents')                                            # Must specify
+    parser.add_argument('--train_stage_one_classifier', type='store_true', default=False, help='Train the language model')
+    parser.add_argument('--train_stage_two_classifier', type='store_true', default=False, help='Train the naive Bayes classifier')
+    parser.add_argument('--run_stage_one_classifier', type='store_true', default=False, help='Run the naive Bayes classifier')
+    parser.add_argument('--run_stage_two_classifier', type='store_true', default=False, help='Run the language model classifier')
     parser.add_argument('--model_name', type=str, help='Name of the HuggingFace model', default='biolink')
     parser.add_argument('--use_entire_ground_truth_for_stage_two_training', '-use_entire', action='store_true', default=False)             # Pick this or...
     parser.add_argument('--use_stage_one_predicted_positives_for_stage_two_training', '-use_s1_preds', action='store_true', default=False) # ...this.
@@ -57,10 +61,7 @@ if __name__ == "__main__":
     ########################
     ## Document Download  ##
     ########################
-    if download in ('y','n'):
-        Exception('Say 'y' or 'n' for download)
-    if download == 'y':
-        
+    if download:        
         ### Download ontopic documents ###
         print('*'*50, '\n', 'obtaining topic-relevant documents', '\n', '*'*50, '\n')
         pubmed_doc_cmd = [
@@ -106,17 +107,18 @@ if __name__ == "__main__":
     ###########################
     ## Stage Two Classifier  ##
     ###########################
-    # Load Training Data    
-    if args.use_entire_ground_truth_for_stage_two_training:
-        with open(f'output/{topic}_entire_ground_truth_feature_matrix_path.txt','r') as fin:
-            feature_matrix_path = fin.readlines()[0].strip()
-        print('Feature Matrix Path (Entire Ground Truth Dataset)', feature_matrix_path)
-    elif args.use_stage_one_predicted_positives_for_stage_two_training:
-         with open(f'output/{topic}_stage_one_predicted_positive_feature_matrix_path.txt','r') as fin:
-            feature_matrix_path = fin.readlines()[0].strip()
-        print('Feature Matrix Path (Stage One Predicted Positive Ground Truth Dataset)', feature_matrix_path)
-    train_test_data = prepare_feature_matrix(feature_matrix_path=feature_matrix_path, use_head=False,)
-    num_labels = len(set(train_test_data['train']['labels']))
+    if args.train_stage_one_classifier:
+        # Load Training Data    
+        if args.use_entire_ground_truth_for_stage_two_training:
+            with open(f'output/{topic}_entire_ground_truth_feature_matrix_path.txt','r') as fin:
+                feature_matrix_path = fin.readlines()[0].strip()
+            print('Feature Matrix Path (Entire Ground Truth Dataset)', feature_matrix_path)
+        elif args.use_stage_one_predicted_positives_for_stage_two_training:
+             with open(f'output/{topic}_stage_one_predicted_positive_feature_matrix_path.txt','r') as fin:
+                feature_matrix_path = fin.readlines()[0].strip()
+            print('Feature Matrix Path (Stage One Predicted Positive Ground Truth Dataset)', feature_matrix_path)
+        train_test_data = prepare_feature_matrix(feature_matrix_path=feature_matrix_path, use_head=False,)
+        num_labels = len(set(train_test_data['train']['labels']))
     
     # Run model 
     DC_cvd = DocumentClassifier(dataset=train_test_data)
