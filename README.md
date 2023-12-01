@@ -4,7 +4,7 @@ This repository is for the code to classify PubMed documents. PubMed classifies/
 ## Document Download
 
 ### get_pubmed_docs.py
-This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the get_offtopic_docs.py.
+This script obtains PubMed documents (titles + abstracts) via an API. PubMed documents are chosen based on the topics denoted by MeSH terms. One way to use the API is for the user to submit a list of MeSH-defined categories (e.g., heart failure MeSH tree numbers) in the 'input/categories_list_of_list_of_tree_numbers_{yourtopic}.json'. The other way to use the API is to submit a list of PMIDs to obtain the documents. This second way is used by the get_offtopic_or_unlabeled_docs.py.
 
 Example Usage:
 ```
@@ -29,14 +29,27 @@ Flags
 ```
 
 
-### get_offtopic_docs.py
+### get_offtopic_or_unlabeled_docs.py
 This script also obtains PubMed documents (titles + abstracts) via an API. However, these documents are a user-chosen number of documents *not* studying your topics of interst as shown. This is used for training the model to discriminate between your topics and other topics it will see when you use the document classifier on unlabeled/uncategorized documents. This relies on the previous API, get_pubmed_docs.py, assuming that it has been run on your topic. This API will use that API's output as input, automatically searching for files created in the first API. 
 Example Usage:
 ```
+# Get offtopic PMIDs
 topic = 'hf'
-! python get_offtopic_docs.py --topic $topic \
-                                  --num_random_pmids 10000 -m2 
+! python get_offtopic_or_unlabeled_docs.py --topic $topic \
+                                  --num_random_pmids 10000 -m2 \
+                                  --max_pmid 37000000 \
+                                  --get_offtopic_docs
 ```
+
+```
+# Get unlabeled documents (with PMID greater than 37000000 (more recent))
+topic = 'hf'
+! python get_offtopic_or_unlabeled_docs.py --topic $topic \
+                                  --num_random_pmids 10000 -m2 \
+                                  --min_pmid 37000000 \
+                                  --get_unlabeled_docs
+```
+
 Flags:
 ```
 --topic : specify the topic you are studying. Make sure it matches the name of a topic you have used to run the first API.
@@ -56,4 +69,4 @@ This applies a preliminary document classifier. (Naive Bayesian Classifier) It i
 This is the transformer-based language model that is fine-tuned to classify documents by topic. The training and testing is implemented in PyTorch. Users can specify the model, epochs, etc. 
 
 ### run_document_classifier.py
-This runs the entire pipeline to download on-topic (get_pubmed_docs.py) and off-topic (get_offtopic_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
+This runs the entire pipeline to download on-topic (get_pubmed_docs.py) and off-topic (get_offtopic_or_unlabeled_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
