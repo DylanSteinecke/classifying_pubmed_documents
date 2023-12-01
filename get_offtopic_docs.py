@@ -27,7 +27,7 @@ def get_other_category_documents(num_random_pmids, topic):
     print('Downloading the "other" category documents...(output will be displayed at the end of function execution)')
     pmid_to_other_categories_path = f'output/pmid_to_category_less_than_{num_random_pmids}_non_{topic}.json'
     other_feature_matrix_path = f'output/feature_matrix_less_than_{num_random_pmids}_non_{topic}.csv'
-    os.system('python pubmed_doc_api.py --get_docs_on_pubmed '+\
+    os.system('python get_ontopic_docs.py --get_docs_on_pubmed '+\
                                       f'--pmid_to_cat {pmid_to_other_categories_path} '+\
                                       f'--ft_mtrx_pth {other_feature_matrix_path}')
     print('Done!')
@@ -99,12 +99,12 @@ def merge_main_and_other_feature_matrices(topic, merge_matrix_option_1, merge_ma
     
     
 if __name__ == '__main__':
-    # Be sure to run the pubmed_doc_api.py first for the topic of interest. This current file
+    # Be sure to run the get_ontopic_docs.py first for the topic of interest. This current file
     # relies on the output from that previous API.
     '''
     Example of first PubMed API
     topic = 'hf'
-    ! python pubmed_doc_api.py --get_docs_on_pubmed\
+    ! python get_ontopic_docs.py --get_docs_on_pubmed\
                                --get_pmids_via_mesh\
                                --categories f'input/categories_list_of_list_of_tree_numbers_{topic}.json'\
                                --cats_of_pmids f'output/category_of_pmids_{topic}.csv'\
@@ -112,7 +112,7 @@ if __name__ == '__main__':
                                --ft_mtrx_pth f'output/feature_matrix_{topic}.csv'\
 
     Example of this PubMed API
-    ! python pubmed_unlalebed_docs_api.py --topic f'{topic}' --num_random_pmids 10000 --m1 
+    ! python get_offtopic_docs.py --topic f'{topic}' --num_random_pmids 10000 --m1 
     '''
     
     parser = argparse.ArgumentParser(description='PubMed document API, unlabeled docs')
