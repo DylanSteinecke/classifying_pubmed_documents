@@ -37,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--run_stage_one_classifier', type='store_true', default=False, help='Run the naive Bayes classifier')
     parser.add_argument('--run_stage_two_classifier', type='store_true', default=False, help='Run the language model classifier')
     parser.add_argument('--model_name', type=str, help='Name of the HuggingFace model', default='biolink')
-    parser.add_argument('--use_entire_ground_truth_for_stage_two_training', '-use_entire', action='store_true', default=False)             # Pick this or...
+    parser.add_argument('--use_original_for_stage_two_training', '-use_entire', action='store_true', default=False)             # Pick this or...
     parser.add_argument('--use_stage_one_predicted_positives_for_stage_two_training', '-use_s1_preds', action='store_true', default=False) # ...this.
     parser.add_argument('--epochs', type=int, default=5)
     args = parser.parse_args()
@@ -100,25 +100,51 @@ if __name__ == "__main__":
     ##########################
     ## Stage One Classifier ##
     ##########################
+    # Find the path to the feature matrix
+    if args.train_stage_one_classifier:
+        # Load Training Data    
+        path_to_feature_matrix_path = f'output/{topic}_original_feature_matrix_path.txt' # on+offtopic w/ ground truth labels
+    elif args.run_stage_one_classifier:
+        # Load unlabeled data 
+        path_to_feature_matrix_path = f'output/{topic}_unlabeled_{num_offtopic_docs}_docs_feature_matrix_path.txt' # on(?)+offtopic w/ no labels
+    with open(path_to_feature_matrix_path,'r') as fin:
+        feature_matrix_path = fin.readlines()[0].strip()
 
-    # Insert code here
+    # Simha: use feature_matrix_path to read the feature matrix in (this is the path to the feature/document matrix)
     
-    
+    # Run Naive Bayes classifier 
+    #print('\n', '*'*50, '\n'+ 'Running Naive Bayes classifier', '\n', '*'*50, '\n')
+    #naive_bayes_cmd = [
+    #    "python", "___.py",
+    #                    "--topic",  topic,
+    #                  ]
+    #subprocess.run(pubmed_unlabeled_cmd, check=True)
+
+
     ###########################
     ## Stage Two Classifier  ##
     ###########################
-    if args.train_stage_one_classifier:
+    # Find the path to the feature matrix
+    if args.train_stage_two_classifier:
         # Load Training Data    
-        if args.use_entire_ground_truth_for_stage_two_training:
-            with open(f'output/{topic}_entire_ground_truth_feature_matrix_path.txt','r') as fin:
-                feature_matrix_path = fin.readlines()[0].strip()
-            print('Feature Matrix Path (Entire Ground Truth Dataset)', feature_matrix_path)
+        if args.use_original_for_stage_two_training:
+            path_to_feature_matrix_path = f'output/{topic}_original_feature_matrix_path.txt'
         elif args.use_stage_one_predicted_positives_for_stage_two_training:
-             with open(f'output/{topic}_stage_one_predicted_positive_feature_matrix_path.txt','r') as fin:
-                feature_matrix_path = fin.readlines()[0].strip()
-            print('Feature Matrix Path (Stage One Predicted Positive Ground Truth Dataset)', feature_matrix_path)
-        train_test_data = prepare_feature_matrix(feature_matrix_path=feature_matrix_path, use_head=False,)
-        num_labels = len(set(train_test_data['train']['labels']))
+            path_to_feature_matrix_path = f'output/{topic}_stage_one_labeled_positive_feature_matrix_path.txt' # ground truth labels
+    elif args.run_stage_two_classifier:
+        if args.run_stage_one_classifier:    
+            # Load unlabeled data predicted to be ontopic by stage one
+            path_to_feature_matrix_path = f'output/{topic}_stage_one_predicted_postive_feature_matrix_path.txt'    # stage 1 labels
+        else:
+            # Load unlabeled data 
+            path_to_feature_matrix_path = f'output/{topic}_unlabeled_{num_offtopic_docs}_docs_feature_matrix_path.txt' # on(?)+offtopic w/ no labels
+
+    with open(path_to_feature_matrix_path,'r') as fin:
+        feature_matrix_path = fin.readlines()[0].strip()
+
+    # Load the feature matrix
+    train_test_data = prepare_feature_matrix(feature_matrix_path)
+    num_labels = len(set(train_test_data['train']['labels']))
     
     # Run model 
     DC_cvd = DocumentClassifier(dataset=train_test_data)
@@ -130,4 +156,3 @@ if __name__ == "__main__":
                               lr=3e-5,
                               logfile=f'output/{topic}_logfile.txt',
                               save_model=True)
-
