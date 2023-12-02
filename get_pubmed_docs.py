@@ -201,6 +201,7 @@ def submit_pmids_get_article_xml(pmids, retmax=10000):
         
 # ALT idea: Iterate through queried PMIDs and extract that part from the XML    
 def extract_pmid_title_abstract(queried_pmids,
+                                max_num_docs,
                                 pmid_to_categories_path, 
                                 feature_matrix_outpath,
                                 retmax,
@@ -309,6 +310,10 @@ def extract_pmid_title_abstract(queried_pmids,
                 ### Final (Features || Labels)
                 writer.writerow([pmid, title, abstract, ','.join(topic_labels)])
             os.remove(f'output/response_text_{batch_num}.json')
+
+        if get_unlabeled_docs:
+            with open(f'output/{topic}_unlabeled_{max_num_docs}_docs_feature_matrix_path.txt', 'w') as fout:
+                fout.write(feature_matrix_outpath)
         if verbose:
             print('PMIDs:', num_pmids)
             print('Titles:', num_titles)
@@ -378,6 +383,7 @@ if __name__ == '__main__':
         submit_pmids_get_article_xml(all_pmids, 
                                      batch_size,)
         extract_pmid_title_abstract(all_pmids,
+                                    max_num_docs,
                                     pmid_to_categories_path,
                                     feature_matrix_outpath,
                                     batch_size,
