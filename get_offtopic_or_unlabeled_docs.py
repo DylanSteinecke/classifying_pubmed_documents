@@ -107,7 +107,7 @@ def merge_ontopic_and_offtopic_feature_matrices(topic, merge_matrix_option_1, me
         print('Specify a merging strategy')
         return
     
-    with open(f'output/{topic}_entire_ground_truth_feature_matrix_path.txt','w') as fout:
+    with open(f'output/{topic}_original_feature_matrix_path.txt','w') as fout:
         fout.write(combined_feature_matrix_path)
     
     print('Done!')
@@ -129,7 +129,7 @@ if __name__ == '__main__':
                                --ft_mtrx_pth f'output/feature_matrix_{topic}.csv'\
 
     Example of this PubMed API
-    ! python get_offtopic_docs.py --topic f'{topic}' --num_of_pmids 10000 --m1 
+    ! python get_offtopic_or_unlabeled_docs.py --topic f'{topic}' --num_of_pmids 10000 --m1 
     '''
     
     parser = argparse.ArgumentParser(description='PubMed document API, unlabeled docs')
