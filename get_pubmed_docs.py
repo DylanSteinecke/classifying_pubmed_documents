@@ -8,7 +8,7 @@ from itertools import chain
 try:
     from pubmed_api.pubmed import PubMedAPI
 except:
-    os.system('pip install pubmed-api')
+    os.system('pip3 install pubmed-api')
     from pubmed_api.pubmed import PubMedAPI
 import requests
 import re
