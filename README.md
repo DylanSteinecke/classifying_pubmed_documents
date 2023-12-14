@@ -11,7 +11,7 @@ Example Usage:
 topic='hf'
 python3 get_pubmed_docs.py --get_docs_on_pubmed \
                            --get_pmids_via_mesh \
-                           --run_init_download \  #call this flag only the first time you run this script 
+                           --download_mesh_tree \  # only call this flag the first time you run this script 
                            --categories 'input/mesh_terms.json' \
                            --cats_of_pmids "output/category_of_pmids_${topic}.csv" \
                            --pmid_to_cat "output/pmid_to_category_${topic}.json" \
@@ -22,6 +22,7 @@ python3 get_pubmed_docs.py --get_docs_on_pubmed \
 
 Flags
 ```
+--download_mesh_tree : downloads the MeSH tree. Only needs to be done once.
 --categories, -c : the user must create this file, a list of lists of MeSH tree numbers denoting the topics to be studied.
 --get_docs_on_pubmed : include this flag if you want to get the PubMed documents
 --get_pmids_via_mesh : include this flag if you want to get PubMed documents studying your MeSH terms. Don't include it if you have a predefined set of PMIDs you want.
