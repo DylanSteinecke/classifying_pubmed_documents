@@ -8,15 +8,16 @@ This script obtains PubMed documents (titles + abstracts) via an API. PubMed doc
 
 Example Usage:
 ```
-topic = 'hf'
-
-! python get_pubmed_docs.py --get_docs_on_pubmed\
-                           --get_pmids_via_mesh\
-                           --categories 'input/categories_list_of_list_of_tree_numbers_'$topic'.json'\
-                           --cats_of_pmids 'output/category_of_pmids_'$topic'.csv'\
-                           --pmid_to_cat 'output/pmid_to_category_'$topic'.json'\
-                           --ft_mtrx_pth 'output/feature_matrix_'$topic'.csv'\
+topic='hf'
+python3 get_pubmed_docs.py --get_docs_on_pubmed \
+                           --get_pmids_via_mesh \
+                           --run_init_download \  #call this flag only the first time you run this script 
+                           --categories 'input/mesh_terms.json' \
+                           --cats_of_pmids "output/category_of_pmids_${topic}.csv" \
+                           --pmid_to_cat "output/pmid_to_category_${topic}.json" \
+                           --ft_mtrx_pth "output/feature_matrix_${topic}.csv" \
                            --max_num_docs 999999
+
 ```
 
 Flags
@@ -34,21 +35,17 @@ This script also obtains PubMed documents (titles + abstracts) via an API. Howev
 Example Usage:
 ```
 # Get offtopic PMIDs
-topic = 'hf'
-! python3 get_pubmed_docs.py --get_docs_on_pubmed \
-                           --get_pmids_via_mesh \
-                           --run_init_download \  #call this flag only the first time you run this script 
-                           --categories 'input/mesh_terms.json' \
-                           --cats_of_pmids "output/category_of_pmids_${topic}.csv" \
-                           --pmid_to_cat "output/pmid_to_category_${topic}.json" \
-                           --ft_mtrx_pth "output/feature_matrix_${topic}.csv" \
-                           --max_num_docs 999999
+topic='hf'
+python get_offtopic_or_unlabeled_docs.py --topic $topic \
+                                  --num_random_pmids 10000 -m2 \
+                                  --min_pmid 37000000 \
+                                  --get_offtopic_docs
 ```
 
 ```
 # Get unlabeled documents (with PMID greater than 37000000 (more recent))
-topic = 'hf'
-! python get_offtopic_or_unlabeled_docs.py --topic $topic \
+topic='hf'
+python get_offtopic_or_unlabeled_docs.py --topic $topic \
                                   --num_random_pmids 10000 -m2 \
                                   --min_pmid 37000000 \
                                   --get_unlabeled_docs
