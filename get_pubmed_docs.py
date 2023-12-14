@@ -39,17 +39,19 @@ def switch_dictset_to_dictlist(the_dict):
 '''
 Pick MeSH IDs
 '''
-def download_mesh_xml():
+def download_mesh_xml(year=-1):
     print('Downloading MeSH XML...')
-    year = datetime.now().year
+    if year == -1:
+        year = datetime.now().year
     url = f'https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc{year}.xml'
     dest = f'input/desc{year}.xml'
     urllib.request.urlretrieve(url, dest);
     print('Download complete!')
 
-def parse_mesh_xml():
+def parse_mesh_xml(year=-1):
     print('Parsing MeSH XML...')
-    year = datetime.now().year
+    if year == -1:
+        year = datetime.now().year 
     tree = ET.parse(f'input/desc{year}.xml')
     root = tree.getroot()   
     print('Parsing complete!')
@@ -297,15 +299,16 @@ def extract_pmid_title_abstract(queried_pmids,
                             continue
                    
                 ### MeSH Topic Labels
-                if get_labeled_docs:
+                if get_unlabeled_docs: # when getting documents of unknown topics
+                    topic_labels = ['nan']
+                else:  # when getting labeled on-topic or labeled off-topic
                     try:
                         categories = list(set(pmid_to_categories[pmid]))
                         topic_labels = [str(cat_num) for cat_num in categories]
                     except:
                         if pmid in pmid_batch:
                             print(pmid in pmid_batch,' Alarm: Problem with pmid_to_categories. PMID in queried PMIDs:')
-                elif get_unlabeled_docs:
-                    topic_labels = 'nan'
+                
                     
                 ### Final (Features || Labels)
                 writer.writerow([pmid, title, abstract, ','.join(topic_labels)])
@@ -361,7 +364,19 @@ if __name__ == '__main__':
         ### Initial download of all of MeSH (Run once)
         if run_initial_download:
             download_mesh_xml()
-            root = parse_mesh_xml()
+            try:
+                root = parse_mesh_xml()
+            #except:
+            #    last_year = datetime.now().year-1
+            #    print(f"This year's MeSH file didn't work. Trying last year {last_year}")
+            #    download_mesh_xml(year=last_year)
+            #    root = parse_mesh_xml(year=last_year)
+            except: 
+                next_year = datetime.now().year+1
+                print(f"This year's MeSH file didn't work. Trying next year {next_year}")
+                download_mesh_xml(year=next_year)
+                root = parse_mesh_xml(year=next_year)
+                    
             _, _, _ = align_mesh_trees_with_terms(root)
 
         # Identify categories of study
