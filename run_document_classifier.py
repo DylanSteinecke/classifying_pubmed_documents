@@ -69,7 +69,7 @@ if __name__ == "__main__":
                             '--download_mesh_tree',
                             '--get_docs_on_pubmed',
                             '--get_pmids_via_mesh',
-                            '--categories',  f'input/categories_list_of_list_of_tree_numbers_{topic.split("_")[0]}.json',
+                            '--categories',  f'input/{topic.split("_")[0]}_tree_numbers.json',
                             '--cats_of_pmids', f'output/category_of_pmids_{topic}.csv',
                             '--pmid_to_cat',   f'output/pmid_to_category_{topic}.json',
                             '--ft_mtrx_pth',   f'output/feature_matrix_{topic}.csv',
