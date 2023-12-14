@@ -17,8 +17,6 @@ python get_pubmed_docs.py --get_docs_on_pubmed \
                            --pmid_to_cat "output/pmid_to_category_${topic}.json" \
                            --ft_mtrx_pth "output/feature_matrix_${topic}.csv" \
                            --max_num_docs 999999
-
-
 ```
 
 Flags
