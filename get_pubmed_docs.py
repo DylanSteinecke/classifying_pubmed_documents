@@ -331,7 +331,7 @@ if __name__ == '__main__':
     parser.add_argument('--download_mesh_tree', '-d',
                        action='store_true', default=False)
     parser.add_argument('--categories', '-c',
-                       type=str, default='input/categories_tree_numbers.json')
+                       type=str, default='input/topic_tree_numbers.json')
     parser.add_argument('--get_pmids_via_mesh', '-gp',
                        action='store_true', default=False)
     parser.add_argument('--get_docs_on_pubmed', '-gd',
