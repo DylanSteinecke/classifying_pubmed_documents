@@ -9,14 +9,15 @@ This script obtains PubMed documents (titles + abstracts) via an API. PubMed doc
 Example Usage:
 ```
 topic='hf'
-python3 get_pubmed_docs.py --get_docs_on_pubmed \
+python get_pubmed_docs.py --get_docs_on_pubmed \
                            --get_pmids_via_mesh \
-                           --download_mesh_tree \  # only call this flag the first time you run this script 
+                           --download_mesh_tree \
                            --categories 'input/mesh_terms.json' \
                            --cats_of_pmids "output/category_of_pmids_${topic}.csv" \
                            --pmid_to_cat "output/pmid_to_category_${topic}.json" \
                            --ft_mtrx_pth "output/feature_matrix_${topic}.csv" \
                            --max_num_docs 999999
+
 
 ```
 
