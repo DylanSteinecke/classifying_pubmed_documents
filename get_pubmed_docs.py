@@ -328,7 +328,7 @@ if __name__ == '__main__':
     batch_size = 10000
     
     parser = argparse.ArgumentParser(description='PubMed document API')
-    parser.add_argument('--run_init_download', '-d',
+    parser.add_argument('--download_mesh_tree', '-d',
                        action='store_true', default=False)
     parser.add_argument('--categories', '-c',
                        type=str, default='input/categories_list_of_list_of_tree_numbers.json')
@@ -352,7 +352,7 @@ if __name__ == '__main__':
     get_docs_on_pubmed = args.get_docs_on_pubmed
     get_pmids_via_mesh = args.get_pmids_via_mesh 
     feature_matrix_outpath = args.ft_mtrx_pth     # specify if you are retrieving abstracts and titles
-    run_initial_download = args.run_init_download # specify if you have not downloaded the latest MeSH ontology
+    download_mesh_tree = args.download_mesh_tree # specify if you have not downloaded the latest MeSH ontology
     categories_path = args.categories             # specify if retreiving PMIDs via MeSH, (lists of lists of tree numbers, descendants are auto included)
     categories_of_pmids_path = args.cats_of_pmids # specify if retrieving PMIDs via MeSH
     pmid_to_categories_path = args.pmid_to_cat    # specify if not retreiving PMIDs via MeSH or you want to save a new one
@@ -362,7 +362,7 @@ if __name__ == '__main__':
 
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
-        if run_initial_download:
+        if download_mesh_tree:
             download_mesh_xml()
             try:
                 root = parse_mesh_xml()
