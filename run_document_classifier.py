@@ -66,6 +66,7 @@ if __name__ == "__main__":
         print('*'*50, '\n', 'obtaining topic-relevant documents', '\n', '*'*50, '\n')
         pubmed_doc_cmd = [
             "python", 'get_pubmed_docs.py', 
+                            '--download_mesh_tree',
                             '--get_docs_on_pubmed',
                             '--get_pmids_via_mesh',
                             '--categories',  f'input/categories_list_of_list_of_tree_numbers_{topic.split("_")[0]}.json',
