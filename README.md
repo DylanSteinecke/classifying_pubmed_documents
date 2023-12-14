@@ -40,7 +40,6 @@ Example Usage:
 topic='hf'
 python get_offtopic_or_unlabeled_docs.py --topic $topic \
                                   --num_random_pmids 10000 -m2 \
-                                  --min_pmid 37000000 \
                                   --get_offtopic_docs
 ```
 
