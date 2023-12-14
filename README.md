@@ -53,7 +53,7 @@ python get_offtopic_or_unlabeled_docs.py --topic $topic \
 Flags:
 ```
 --topic : specify the topic you are studying. Make sure it matches the name of a topic you have used to run the first API.
---num_of_pmids : specify the number of random PMIDs to use. The script will pick this many random PMIDs, remove any PMIDs that are known to study your topics, and then submit those PMIDs to the get_pubmed_docs.py to retrieve PubMed documents (titles + abstracts) which have been labeled as studying topics other than your topic(s) of interest.
+--num_of_pmids : specify the number of PMIDs to use. The script will pick this many PMIDs, either randomly between min and max PMID number (for offtopic settings) or exhaustively between min PMID and min PMID + num_of_pmids). It will then remove any PMIDs that are known to study your topics, and then submit those PMIDs to the get_pubmed_docs.py to retrieve PubMed documents (titles + abstracts) which have been labeled as studying topics other than your topic(s) of interest.
 --max_pmid : this is the largest PMID to consider. This is a way to choose PMIDs from a certain date range, because older PMIDs are more likely to have been labeled. Currently, PMIDs prior to 37000000 are more labeled (11/9/23).
 --min_pmid : this is the smallest PMID to consider. This is similar to above, but its purpose is for when you want to find more recent and unlabeled documents. For example, set it to 3700000 to find the more recent documents.
 -m1 : a behind-the-scenes way to merge the data with dataframes
