@@ -368,8 +368,8 @@ if __name__ == '__main__':
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
         if download_mesh_tree:
-            download_mesh_xml()
             try:
+                download_mesh_xml()
                 root = parse_mesh_xml()
             #except:
             #    last_year = datetime.now().year-1

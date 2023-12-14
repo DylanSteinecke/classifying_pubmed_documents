@@ -2,6 +2,7 @@ from torch import cuda
 import os
 import re
 import subprocess
+import argparse
 from pytorch_document_classifier import *
 
 
@@ -27,15 +28,20 @@ def choose_least_utilized_gpu():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process input for data download')
-    parser.add_argument('--topic', type=str, help='Topic name')                                                                            # Must specify
-    parser.add_argument('--download', action='store_true', default=False, help='Download new data')
-    parser.add_argument('--num_ontopic_topic_docs', type=int, help='Max number of documents in each ontopic category')                     # Must specify
-    parser.add_argument('--num_offtopic_docs', type=int, help='Number of offtopic documents')                                              # Must specify
-    parser.add_argument('--num_unlabeled_docs', type=int, help='Number of unlabeled documents')                                            # Must specify
-    parser.add_argument('--train_stage_one_classifier', type='store_true', default=False, help='Train the language model')
-    parser.add_argument('--train_stage_two_classifier', type='store_true', default=False, help='Train the naive Bayes classifier')
-    parser.add_argument('--run_stage_one_classifier', type='store_true', default=False, help='Run the naive Bayes classifier')
-    parser.add_argument('--run_stage_two_classifier', type='store_true', default=False, help='Run the language model classifier')
+    parser.add_argument('--topic', 
+                        type=str, help='Topic name')                                 # Must specify
+    parser.add_argument('--download_docs', '-d',
+                        action='store_true', default=False, help='Download new data')
+    parser.add_argument('--num_ontopic_topic_docs', type=str,
+                        help='Max number of documents in each ontopic category')     # Must specify
+    parser.add_argument('--num_offtopic_docs', type=int,
+                        help='Number of offtopic documents')                         # Must specify
+    parser.add_argument('--num_unlabeled_docs', type=int, 
+                        help='Number of unlabeled documents')                        # Must specify
+    parser.add_argument('--train_stage_one_classifier', action='store_true', default=False, help='Train the language model')
+    parser.add_argument('--train_stage_two_classifier', action='store_true', default=False, help='Train the naive Bayes classifier')
+    parser.add_argument('--run_stage_one_classifier', action='store_true', default=False, help='Run the naive Bayes classifier')
+    parser.add_argument('--run_stage_two_classifier', action='store_true', default=False, help='Run the language model classifier')
     parser.add_argument('--model_name', type=str, help='Name of the HuggingFace model', default='biolink')
     parser.add_argument('--use_original_for_stage_two_training', '-use_entire', action='store_true', default=False)             # Pick this or...
     parser.add_argument('--use_stage_one_predicted_positives_for_stage_two_training', '-use_s1_preds', action='store_true', default=False) # ...this.
@@ -43,7 +49,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     topic = args.topic
-    download = args.download
+    download = args.download_docs
     num_ontopic_docs = args.num_ontopic_topic_docs
     num_offtopic_docs = args.num_offtopic_docs
     num_unlabeled_docs = args.num_unlabeled_docs
@@ -52,7 +58,7 @@ if __name__ == "__main__":
     os.system('nvidia-smi --query-gpu=utilization.gpu --format=csv')  
     chosen_gpu_id = choose_least_utilized_gpu()
     if chosen_gpu_id:
-        print(f"Chosen GPU: {chosen_gpu}")
+        print(f"Chosen GPU: {chosen_gpu_id}")
     else:
         Exception("Failed to determine GPU utilization.")
     cuda.set_device(chosen_gpu_id)
@@ -63,7 +69,7 @@ if __name__ == "__main__":
     ########################
     if download:        
         ### Download ontopic documents ###
-        print('*'*50, '\n', 'obtaining topic-relevant documents', '\n', '*'*50, '\n')
+        print('*'*50, '\nobtaining labeled on-topic documents\n', '*'*50, '\n')
         pubmed_doc_cmd = [
             "python", 'get_pubmed_docs.py', 
                             '--download_mesh_tree',
@@ -73,18 +79,18 @@ if __name__ == "__main__":
                             '--cats_of_pmids', f'output/category_of_pmids_{topic}.csv',
                             '--pmid_to_cat',   f'output/pmid_to_category_{topic}.json',
                             '--ft_mtrx_pth',   f'output/feature_matrix_{topic}.csv',
-                            '--max_num_docs',  num_ontopic_topic_docs]
+                            '--max_num_docs',  num_ontopic_docs]
         subprocess.run(pubmed_doc_cmd, check=True)
     
         ### Download offtopic documents ###
-        print('\n', '*'*50, '\n'+ 'obtaining topic-irrelevant documents', '\n', '*'*50, '\n')
+        print('\n', '*'*50, '\n'+ 'obtaining labeled off-topic documents', '\n', '*'*50, '\n')
         pubmed_offtopic_cmd = [
             "python", "get_offtopic_or_unlabeled_docs.py",
-                            "--topic",  topic,
-                            "--num_of_pmids", num_offtopic_docs,
+                           "--topic",  topic,
+                            "--num_of_pmids", str(num_offtopic_docs),
                             "--get_offtopic_docs",
-                            "--max_pmid", 37000000,
-                            "-m2"]
+                           #"--max_pmid", '37000000',
+                            "-m2",]
         subprocess.run(pubmed_offtopic_cmd, check=True)
     
         ### Download unlabeled documents ###
@@ -92,10 +98,11 @@ if __name__ == "__main__":
         pubmed_unlabeled_cmd = [
             "python", "get_offtopic_or_unlabeled_docs.py",
                             "--topic",  topic,
-                            "--num_of_pmids", num_offtopic_docs,
+                            "--num_of_pmids", str(num_offtopic_docs),
                             "--get_unlabeled_docs",
-                            "--min_pmid", 37000000,]
+                            "--min_pmid", '37000000',]
         subprocess.run(pubmed_unlabeled_cmd, check=True)
+
 
 
     ##########################
@@ -122,6 +129,7 @@ if __name__ == "__main__":
     #subprocess.run(pubmed_unlabeled_cmd, check=True)
 
 
+    
     ###########################
     ## Stage Two Classifier  ##
     ###########################
