@@ -79,7 +79,7 @@ if __name__ == "__main__":
         ### Download offtopic documents ###
         print('\n', '*'*50, '\n'+ 'obtaining topic-irrelevant documents', '\n', '*'*50, '\n')
         pubmed_offtopic_cmd = [
-            "python", "pubmed_offtopic_or_unlabeled_docs_api.py",
+            "python", "get_offtopic_or_unlabeled_docs.py",
                             "--topic",  topic,
                             "--num_of_pmids", num_offtopic_docs,
                             "--get_offtopic_docs",
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         ### Download unlabeled documents ###
         print('\n', '*'*50, '\n'+ 'obtaining unlabeled documents', '\n', '*'*50, '\n')
         pubmed_unlabeled_cmd = [
-            "python", "pubmed_offtopic_or_unlabeled_docs_api.py",
+            "python", "get_offtopic_or_unlabeled_docs.py",
                             "--topic",  topic,
                             "--num_of_pmids", num_offtopic_docs,
                             "--get_unlabeled_docs",
