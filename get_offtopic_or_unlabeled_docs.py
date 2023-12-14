@@ -139,7 +139,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_of_pmids', '-n',
                         type=int, default=10000)
     parser.add_argument('--max_pmid', '-max',
-                        type=int, default=37000000, help='Maximum PMID ID number')
+                        type=int, default=99999999999, help='Maximum PMID ID number')
     parser.add_argument('--min_pmid', '-min',
                         type=int, default=0, help='Minumum PMID ID number')
     parser.add_argument('--get_offtopic_docs', '-off',
