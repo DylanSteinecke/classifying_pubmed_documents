@@ -202,7 +202,8 @@ def submit_pmids_get_article_xml(pmids, retmax=10000):
 
         
 # ALT idea: Iterate through queried PMIDs and extract that part from the XML    
-def extract_pmid_title_abstract(queried_pmids,
+def extract_pmid_title_abstract(topic,
+                                queried_pmids,
                                 max_num_docs,
                                 pmid_to_categories_path, 
                                 feature_matrix_outpath,
@@ -328,6 +329,9 @@ if __name__ == '__main__':
     batch_size = 10000
     
     parser = argparse.ArgumentParser(description='PubMed document API')
+    parser.add_argument('--topic', '-t',
+                        type=str, default='hf', 
+                        help='the name of the topic you are studying (you should have run the first pubmed API with this topic name, and the file should be available)')
     parser.add_argument('--download_mesh_tree', '-d',
                        action='store_true', default=False)
     parser.add_argument('--categories', '-c',
@@ -359,6 +363,7 @@ if __name__ == '__main__':
     max_num_docs = args.max_num_docs              # maximum number of documents
     get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
     get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
+    topic = args.topic
 
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
@@ -397,7 +402,8 @@ if __name__ == '__main__':
         print(len(all_pmids), 'all pmids')
         submit_pmids_get_article_xml(all_pmids, 
                                      batch_size,)
-        extract_pmid_title_abstract(all_pmids,
+        extract_pmid_title_abstract(topic,
+                                    all_pmids,
                                     max_num_docs,
                                     pmid_to_categories_path,
                                     feature_matrix_outpath,

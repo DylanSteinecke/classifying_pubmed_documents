@@ -5,29 +5,35 @@ import json
 import os
 import argparse
 
-def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=-1, max_pmid=99999999, get_offtopic_docs=False, get_unlabeled_docs=False):
+
+def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=0, max_pmid=99999999, get_offtopic_docs=False, get_unlabeled_docs=False):
     print('Getting the PMIDs of the "other" category documents...')
     feature_matrix_for_ontopic_categories_path = f'output/feature_matrix_{topic}.csv'
     topic_name = topic.split("_")[0]
-    categories_of_interest_path = f'input/categories_list_of_list_of_tree_numbers_{topic_name}.json'
-    pmids_of_categories_path = f'output/pmid_to_category_{topic}.json'
-    pmids_not_of_categories_to_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
-
+    categories_of_interest_path = f'input/{topic_name}_tree_numbers.json'
+    
     # Make PMID to label json
     if get_offtopic_docs:
         num_categories = len(json.load(open(categories_of_interest_path)))
         label = num_categories
         pmids = np.random.randint(min_pmid, max_pmid, size=num_of_pmids).astype(str).tolist()
+        pmids_to_new_category_path = f'output/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
+        print()
     elif get_unlabeled_docs:
         label = -1
-        pmids = list(range(min_pmid, num_of_pmids))
+        pmids = list(range(min_pmid, min_pmid+num_of_pmids))
+        pmids_to_new_category_path = f'output/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
+        
+    # ensures on topic pmids are not included 
+    pmids_of_categories_path = f'output/pmid_to_category_{topic}.json'
     pmids_of_categories = list(json.load(open(pmids_of_categories_path)).keys())
     pmids_not_of_categories = list(set(pmids).difference(set(pmids_of_categories)))
-    pmids_not_of_categories_to_categories = {pmid:[label] for pmid in pmids_not_of_categories}
-    with open(pmids_not_of_categories_to_categories_path,'w') as fout:
-        json.dump(pmids_not_of_categories_to_categories, fout)
+    pmids_to_new_category = {pmid:[label] for pmid in pmids_not_of_categories}
+    
+    # saving pmids to categories mapping (pmids to off topic or pmids to unlabeled)
+    with open(pmids_to_new_category_path,'w') as fout:
+        json.dump(pmids_to_new_category, fout)
     print('Done!')
-        
         
 def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, get_unlabeled_docs):
     '''Download documents'''
@@ -36,17 +42,18 @@ def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, 
     if get_offtopic_docs:
         pmid_to_offtopic_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
         offtopic_feature_matrix_path = f'output/feature_matrix_less_than_{num_of_pmids}_non_{topic}.csv'
-        os.system('python get_pubmed_docs.py --get_pubmed_docs '+\
+        os.system('python3 get_pubmed_docs.py --get_docs_on_pubmed '+\
                                           f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
-                                          f'--ft_mtrx_pth {offtopic_feature_matrix_path}'+\
+                                          f'--ft_mtrx_pth {offtopic_feature_matrix_path} '+\
                                           f'--get_offtopic_docs')
     elif get_unlabeled_docs:
-        pmid_to_unlabeled_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_unlabeled__({topic} study).json'
-        unlabeled_feature_matrix_path = f'output/feature_matrix_less_than_{num_of_pmids}_unlabeled_({topic}).csv'
-        os.system('python get_pubmed_docs.py --get_pubmed_docs '+\
-                                          f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
-                                          f'--ft_mtrx_pth {offtopic_feature_matrix_path}'+\
-                                          f'--get_unlabeled_topic_docs')
+        pmid_to_unlabeled_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
+        unlabeled_feature_matrix_path = f'output/feature_matrix_less_than_{num_of_pmids}_unlabeled_{topic}.csv'
+        os.system('python3 get_pubmed_docs.py --get_docs_on_pubmed '+\
+                                          f'--topic {topic} ' +\
+                                          f'--pmid_to_cat {pmid_to_unlabeled_categories_path} '+\
+                                          f'--ft_mtrx_pth {unlabeled_feature_matrix_path} '+\
+                                          f'--get_unlabeled_docs')
     print('Done!')
     
         
@@ -164,12 +171,11 @@ if __name__ == '__main__':
     if get_labeled_docs == True and get_unlabeled_docs == True:
         Exception('Pick either "get_offtopic_docs" or "get_unlabeled_docs"')
     
-    # add enough pmids to match the number specified ?
+    ## Note TO DYLAN -> add enough pmids to match the number specified ?
     
-    
-    get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, max_pmid, get_labeled_docs, get_unlabeled_docs)
+    get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid, max_pmid, get_labeled_docs, get_unlabeled_docs)
     get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_labeled_docs, get_unlabeled_docs)                        
-    if get_offtopic_docs:
+    if get_labeled_docs: # you are getting labeled off topic docs ?? 
         merge_ontopic_and_offtopic_feature_matrices(topic, 
                                               merge_matrix_option_1, 
                                               merge_matrix_option_2)    
