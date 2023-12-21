@@ -50,7 +50,9 @@ if __name__ == "__main__":
     parser.add_argument('--max_pmid', '-max',
                         type=int, default=38000000, help='Maximum PMID ID number')
     parser.add_argument('--min_pmid', '-min',
-                        type=int, default=0, help='Minumum PMID ID number')
+                        type=int, default=0, help='Minumum PMID ID number of offtopic documents')
+    parser.add_argument('--min_pmid_unlabeled', '-min',
+                        type=int, default=37000000, help='Minumum PMID ID number of unlabeled documents')
     args = parser.parse_args()
 
     topic = args.topic
@@ -60,7 +62,8 @@ if __name__ == "__main__":
     num_unlabeled_docs = args.num_unlabeled_docs
     min_pmid = args.min_pmid
     max_pmid = args.max_pmid
-
+    min_pmid_unlabeled = args.min_pmid_unlabeled
+    
     ### Pick the GPU to use ###
     ### Check for CUDA capability ###
     if cuda.is_available():
@@ -79,7 +82,7 @@ if __name__ == "__main__":
         ### Download ontopic documents ###
         print('*'*50, '\nobtaining labeled on-topic documents\n', '*'*50, '\n')
         pubmed_doc_cmd = [
-            "python3", 'get_pubmed_docs.py', 
+            "python", 'get_pubmed_docs.py', 
                             '--topic', topic,
                             '--download_mesh_tree',
                             '--get_docs_on_pubmed',
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         ### Download offtopic documents ###
         print('\n', '*'*50, '\n'+ 'obtaining labeled off-topic documents', '\n', '*'*50, '\n')
         pubmed_offtopic_cmd = [
-            "python3", "get_offtopic_or_unlabeled_docs.py",
+            "python", "get_offtopic_or_unlabeled_docs.py",
                            "--topic",  topic,
                             "--num_of_pmids", str(num_offtopic_docs),
                             "--get_offtopic_docs",
@@ -106,12 +109,13 @@ if __name__ == "__main__":
         ### Download unlabeled documents ###
         print('\n', '*'*50, '\n'+ 'obtaining unlabeled documents', '\n', '*'*50, '\n')
         pubmed_unlabeled_cmd = [
-            "python3", "get_offtopic_or_unlabeled_docs.py",
+            "python", "get_offtopic_or_unlabeled_docs.py",
                             "--topic",  topic,
-                            "--num_of_pmids", str(num_offtopic_docs),
+                            "--num_of_pmids", str(num_unlabeled_docs),
                             "--get_unlabeled_docs",
                             "--min_pmid", '37000000',]
         subprocess.run(pubmed_unlabeled_cmd, check=True)
+
 
 
 
@@ -128,8 +132,6 @@ if __name__ == "__main__":
         with open(path_to_labeled_feature_matrix_path,'r') as fin:
             labeled_feature_matrix_path = fin.readlines()[0].strip()
         
-        #Output Path 
-        out_path = f"output/{topic}"
             
         # Train Naive Bayes classifier 
         print('\n', '*'*50, '\n'+ 'Running Naive Bayes classifier', '\n', '*'*50, '\n')
@@ -139,63 +141,63 @@ if __name__ == "__main__":
                             "--input_path", labeled_feature_matrix_path,
                             "--off_topic_class", str(off_topic_class_num),
                             "--topic",  topic,
-                            "--out_path", out_path
+                            "--out_path", f"output/{topic}",
                         ]
         subprocess.run(naive_bayes_cmd, check=True)
 
     # Inference Time / Deploy Model
     elif args.run_stage_one_classifier:
         # Load unlabeled data 
-        path_to_unlabeled_feature_matrix_path = f'output/{topic}/{topic}_unlabeled_{num_unlabeled_docs}_docs_feature_matrix_path.txt' 
+        path_to_unlabeled_feature_matrix_path = f'output/{topic}/{num_unlabeled_docs}_unlabeled_docs_feature_matrix_path.csv'
         with open(path_to_unlabeled_feature_matrix_path,'r') as fin:
-            unlabeled_feature_matrix_path = fin.readlines()[0].strip()
-            
-        #Output Path 
-        out_path = f"output/{topic}"
+            unlabeled_feature_matrix_path = fin.readlines()[0].strip()            
         
         naive_bayes_cmd = [
             "python", "./NBC/NBC.py",
                             "--run_mode", "predict_unlabeled ",
                             "--topic",  topic,
                             "--unlabeled_docs_path", unlabeled_feature_matrix_path,
-                            "--out_path", out_path
+                            "--out_path", f"output/{topic}",
                         ]
         subprocess.run(naive_bayes_cmd, check=True)
 
-'''    
-    ###########################
-    ## Stage Two Classifier  ##
-    ###########################
-    # Find the path to the feature matrix
-    if args.train_stage_two_classifier:
-        # Load Training Data    
-        if args.use_original_for_stage_two_training:
-            path_to_feature_matrix_path = f'output/{topic}/{topic}_original_feature_matrix_path.txt'
-        elif args.use_stage_one_predicted_positives_for_stage_two_training:
-            path_to_feature_matrix_path = f'output/{topic}/{topic}_stage_one_labeled_positive_feature_matrix_path.txt' # ground truth labels
-    elif args.run_stage_two_classifier:
-        if args.run_stage_one_classifier:    
-            # Load unlabeled data predicted to be ontopic by stage one
-            path_to_feature_matrix_path = f'output/{topic}/{topic}_stage_one_predicted_postive_feature_matrix_path.txt'    # stage 1 labels
-        else:
-            # Load unlabeled data 
-            path_to_feature_matrix_path = f'output/{topic}/{topic}_unlabeled_{num_offtopic_docs}_docs_feature_matrix_path.txt' # on(?)+offtopic w/ no labels
+    
 
+    ##########################
+    ## Stage Two Classifier ##
+    ##########################
+
+    # Train Model
+    if args.train_stage_two_classifier:
+        mode = 'train'
+        if args.use_original_for_stage_two_training: # Original PubMed-downloaded data
+            path_to_feature_matrix_path = f'output/{topic}/{topic}_original_feature_matrix_path.txt' 
+        elif args.use_stage_one_predictions:  # Docs labeled as on-topic by Naive Bayes (ground truth labels) 
+            path_to_feature_matrix_path = f'output/{topic}/{topic}_stage_one_labeled_positive_feature_matrix_path.txt' 
+
+    # Inference Time / Deploy Model
+    elif args.run_stage_two_classifier:
+        mode = 'inference'
+        if args.use_stage_one_predictions: # Documents labeled as on-topic by Naive Bayes (Naive Bayes labels)
+            path_to_feature_matrix_path = f'output/{topic}/{topic}_stage_one_predicted_postive_feature_matrix_path.txt' 
+        else:                             # Load all unlabeled docs
+            path_to_feature_matrix_path = f'output/{topic}/{num_unlabeled_docs}_unlabeled_docs_feature_matrix_path.csv'
+
+    # Load the feature matrix
     with open(path_to_feature_matrix_path,'r') as fin:
         feature_matrix_path = fin.readlines()[0].strip()
 
-    # Load the feature matrix
     train_test_data = prepare_feature_matrix(feature_matrix_path)
     num_labels = len(set(train_test_data['train']['labels']))
+    assert off_topic_class_num == num_labels
     
     # Run model 
     DC_cvd = DocumentClassifier(dataset=train_test_data)
     DC_cvd.classify_documents(model_name=args.model_name',
                               epochs=args.epochs,
                               num_labels=num_labels,
-                              batch_size=16,
-                              model_name_suffix=topic,
+                              batch_size=args.batch_size
+                              model_name_suffix=topic+'_'+mode,
                               lr=3e-5,
-                              logfile=f'output/{topic}/{topic}_logfile.txt',
+                              logfile=f'output/{topic}/{topic}_{mode}_logfile.txt',
                               save_model=True)
-    '''
