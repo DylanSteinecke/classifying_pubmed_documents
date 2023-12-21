@@ -13,9 +13,10 @@ import matplotlib.pyplot as plt
 import argparse
 
 # Download required NLTK resources
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('punkt')
+nltk.download('omw-1.4', quiet=True)
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('punkt', quiet=True)
 
 class NBC:
     def __init__(self, num_classes, off_topic_class , input_path, out_path, topic):
@@ -70,6 +71,8 @@ class NBC:
                  1: self.num_docs_per_class[1]/self.labeled_pubmed}
       return prior_c
 
+
+
     def prepare_feature_matrix(self):
       mat = pd.read_csv(self.input_path)
 
@@ -81,7 +84,8 @@ class NBC:
         pass 
 
       # Change labels column to integers
-      mat_filt.loc[:, 'labels'] = mat_filt['topic_labels'].astype(int)
+      #mat_filt.loc[:, 'labels'] = mat_filt['topic_labels'].astype(int)
+      mat_filt.loc[mat_filt['topic_labels'].apply(lambda x: isinstance(x, int))]   
 
       # Concatenate titles and abstracts
       mat_filt.loc[:, 'abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
@@ -90,18 +94,19 @@ class NBC:
       ## Combine documents that are in disease of interest (on topic) into one group --> 1
       ## Replace documents that are off_toic with label --> 0
       ## E.g. combine systolic and diastolic HF docs into one class to compare to non HF docs
-      self.df.loc[:, 'labels'] = self.df['labels'].apply(
+      self.df.loc[:, 'topic_labels'] = self.df['topic_labels'].apply(
           lambda x: 1 if x == self.off_topic_class else 0
       )
       self.off_topic_class = 1
 
       # extract number of documents in each class
-      self.num_docs_per_class = {idx : count for count, idx in zip(self.df.labels.value_counts(),self.df.labels.value_counts().index)}
+      self.num_docs_per_class = {idx : count for count, idx in zip(self.df.topic_labels.value_counts(),self.df.topic_labels.value_counts().index)}
 
       ## Split the dataset manually using scikit-learn
       ### Store the data splits as instance attributes
       self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-          mat_filt['abstract'], mat_filt['labels'], test_size=0.2, stratify=mat_filt['labels'], random_state=42 )
+          mat_filt['abstract'], mat_filt['topic_labels'], test_size=0.2, stratify=mat_filt['topic_labels'], random_state=42 )
+        
 
     def preprocess(self, abstract):
       #tokenize sentence
@@ -213,6 +218,7 @@ class NBC:
         #classification report
         report = classification_report(self.y_test, self.y_pred)
         file.write(report)
+        print('Naive Bayes Classification Metrics Report:\n', report, '\n')
 
         file.close()
 

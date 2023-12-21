@@ -51,7 +51,7 @@ if __name__ == "__main__":
                         type=int, default=38000000, help='Maximum PMID ID number')
     parser.add_argument('--min_pmid', '-min',
                         type=int, default=0, help='Minumum PMID ID number of offtopic documents')
-    parser.add_argument('--min_pmid_unlabeled', '-min',
+    parser.add_argument('--min_pmid_unlabeled', '-min_un',
                         type=int, default=37000000, help='Minumum PMID ID number of unlabeled documents')
     args = parser.parse_args()
 
@@ -183,6 +183,9 @@ if __name__ == "__main__":
         else:                             # Load all unlabeled docs
             path_to_feature_matrix_path = f'output/{topic}/{num_unlabeled_docs}_unlabeled_docs_feature_matrix_path.csv'
 
+    else:
+        exit("Note: Stage Two Classifier Not Run")
+    
     # Load the feature matrix
     with open(path_to_feature_matrix_path,'r') as fin:
         feature_matrix_path = fin.readlines()[0].strip()
@@ -193,10 +196,10 @@ if __name__ == "__main__":
     
     # Run model 
     DC_cvd = DocumentClassifier(dataset=train_test_data)
-    DC_cvd.classify_documents(model_name=args.model_name',
+    DC_cvd.classify_documents(model_name=args.model_name,
                               epochs=args.epochs,
                               num_labels=num_labels,
-                              batch_size=args.batch_size
+                              batch_size=args.batch_size,
                               model_name_suffix=topic+'_'+mode,
                               lr=3e-5,
                               logfile=f'output/{topic}/{topic}_{mode}_logfile.txt',

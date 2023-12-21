@@ -23,8 +23,7 @@ from sklearn.calibration import calibration_curve
 
 
 
-
-def prepare_feature_matrix(feature_matrix_path, use_head):
+def prepare_feature_matrix(feature_matrix_path, use_head=False):
     mat = pd.read_csv(feature_matrix_path)
 
     # Filter for documents with abstracts
@@ -37,11 +36,11 @@ def prepare_feature_matrix(feature_matrix_path, use_head):
     mat_filt = mat_filt.dropna(subset=['abstract'])
 
     # Filter for PMIDs with one label
-    mat_filt['topic_labels'] = mat_filt['topic_labels'].astype(int)
+    mat_filt.loc[mat_filt['topic_labels'].apply(lambda x: isinstance(x, int))] 
 
     # Concatenate titles and abstracts
-    mat_filt['abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
-
+    mat_filt.loc[:, 'abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
+    
     # Use either the first rows (use_head) or the whole matrix
     if use_head:
         other_label = max([int(label) for label in mat_filt['topic_labels'].tolist()])
