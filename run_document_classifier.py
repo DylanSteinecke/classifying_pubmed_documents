@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import argparse
+import json
 from pytorch_document_classifier import *
 
 
@@ -43,14 +44,15 @@ if __name__ == "__main__":
     parser.add_argument('--run_stage_one_classifier', action='store_true', default=False, help='Run the naive Bayes classifier')
     parser.add_argument('--run_stage_two_classifier', action='store_true', default=False, help='Run the language model classifier')
     parser.add_argument('--model_name', type=str, help='Name of the HuggingFace model', default='biolink')
-    parser.add_argument('--use_original_for_stage_two_training', '-use_entire', action='store_true', default=False)   # Pick this or...
-    parser.add_argument('--use_stage_one_predictions', '-use_s1_preds', action='store_true', default=False) # ...this.
+    parser.add_argument('--use_original_for_stage_two_training', '-use_entire', action='store_true', default=False)             # Pick this or...
+    parser.add_argument('--use_stage_one_predicted_positives_for_stage_two_training', '-use_s1_preds', action='store_true', default=False) # ...this.
     parser.add_argument('--epochs', type=int, default=5)
-    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--max_pmid', '-max',
                         type=int, default=38000000, help='Maximum PMID ID number')
     parser.add_argument('--min_pmid', '-min',
-                        type=int, default=0, help='Minumum PMID ID number')
+                        type=int, default=0, help='Minumum PMID ID number of offtopic documents')
+    parser.add_argument('--min_pmid_unlabeled', '-min',
+                        type=int, default=37000000, help='Minumum PMID ID number of unlabeled documents')
     args = parser.parse_args()
 
     topic = args.topic
@@ -60,16 +62,18 @@ if __name__ == "__main__":
     num_unlabeled_docs = args.num_unlabeled_docs
     min_pmid = args.min_pmid
     max_pmid = args.max_pmid
-
+    min_pmid_unlabeled = args.min_pmid_unlabeled
+    
     ### Pick the GPU to use ###
-    os.system('nvidia-smi --query-gpu=utilization.gpu --format=csv')  
-    chosen_gpu_id = choose_least_utilized_gpu()
-    if chosen_gpu_id:
-        print(f"Chosen GPU: {chosen_gpu_id}")
+    ### Check for CUDA capability ###
+    if cuda.is_available():
+        print("CUDA is available. Using GPU.")
+        chosen_gpu_id = choose_least_utilized_gpu()
+        if chosen_gpu_id is not None:
+            print(f"Chosen GPU: {chosen_gpu_id}")
+            cuda.set_device(chosen_gpu_id)
     else:
-        Exception("Failed to determine GPU utilization.")
-    cuda.set_device(chosen_gpu_id)
-
+        print('!!!! NOTE: CUDA is not available. Using CPU !!!!')
     
     ########################
     ## Document Download  ##
@@ -114,6 +118,7 @@ if __name__ == "__main__":
 
 
 
+
     ##########################
     ## Stage One Classifier ##
     ##########################
@@ -124,18 +129,20 @@ if __name__ == "__main__":
         
         # Load Training Data    
         path_to_labeled_feature_matrix_path = f'output/{topic}/{topic}_original_feature_matrix_path.txt'
-        with open(path_to_feature_matrix_path,'r') as fin:
+        with open(path_to_labeled_feature_matrix_path,'r') as fin:
             labeled_feature_matrix_path = fin.readlines()[0].strip()
+        
             
         # Train Naive Bayes classifier 
         print('\n', '*'*50, '\n'+ 'Running Naive Bayes classifier', '\n', '*'*50, '\n')
         naive_bayes_cmd = [
-            "python", "./NBC/NBC.py",
+            "python3", "./NBC/NBC.py",
                             "--run_mode", "train_test",
                             "--input_path", labeled_feature_matrix_path,
                             "--off_topic_class", str(off_topic_class_num),
                             "--topic",  topic,
-                          ]
+                            "--out_path", f"output/{topic}",
+                        ]
         subprocess.run(naive_bayes_cmd, check=True)
 
     # Inference Time / Deploy Model
@@ -143,18 +150,19 @@ if __name__ == "__main__":
         # Load unlabeled data 
         path_to_unlabeled_feature_matrix_path = f'output/{topic}/{num_unlabeled_docs}_unlabeled_docs_feature_matrix_path.csv'
         with open(path_to_unlabeled_feature_matrix_path,'r') as fin:
-            unlabeled_feature_matrix_path = fin.readlines()[0].strip()
+            unlabeled_feature_matrix_path = fin.readlines()[0].strip()            
+        
         naive_bayes_cmd = [
             "python", "./NBC/NBC.py",
                             "--run_mode", "predict_unlabeled ",
-                            "--off_topic_class", str(off_topic_class_num),
                             "--topic",  topic,
                             "--unlabeled_docs_path", unlabeled_feature_matrix_path,
-                          ]
-        subprocess.run(naive_bayes_cmd, check=True)                               
-
+                            "--out_path", f"output/{topic}",
+                        ]
+        subprocess.run(naive_bayes_cmd, check=True)
 
     
+
     ##########################
     ## Stage Two Classifier ##
     ##########################

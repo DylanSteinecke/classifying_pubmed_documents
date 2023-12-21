@@ -70,3 +70,29 @@ This is the transformer-based language model that is fine-tuned to classify docu
 
 ### run_document_classifier.py
 This runs the entire pipeline to download on-topic (get_pubmed_docs.py) and off-topic (get_offtopic_or_unlabeled_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
+Example Usage (Downloading Documents):
+```
+python run_document_classifier.py --topic eye \
+                                  --num_ontopic_topic_docs 1000 \
+                                  --num_offtopic_docs 1000 \
+                                  --num_unlabeled_docs 1000 \
+                                  --download_docs \
+```
+Example Usage (Train Stage 1 Classifier / Naive Bayes Classifier)
+```
+python run_document_classifier.py --topic eye \
+                                  --train_stage_one_classifier \
+```
+Example Usage (Train Stage 2 Classifier / Fine Tune the Pre-Trained Transformer Language Model)
+```
+python run_document_classifier.py --topic eye \
+                                  --train_stage_two_classifier \
+                                  --use_stage_one_predictions \
+```
+Example Usage (Deploy Stage 1 and 2 Classifiers)
+```
+python run_document_classifier.py --topic eye \
+                                  --run_stage_one_classifier \
+                                  --run_stage_two_classifier \
+                                  --use_stage_one_predictions \
+```
