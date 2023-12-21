@@ -57,6 +57,8 @@ if __name__ == "__main__":
     num_ontopic_docs = args.num_ontopic_topic_docs
     num_offtopic_docs = args.num_offtopic_docs
     num_unlabeled_docs = args.num_unlabeled_docs
+    min_pmid = args.min_pmid
+    max_pmid = args.max_pmid
 
     ### Pick the GPU to use ###
     os.system('nvidia-smi --query-gpu=utilization.gpu --format=csv')  
@@ -94,8 +96,8 @@ if __name__ == "__main__":
                            "--topic",  topic,
                             "--num_of_pmids", str(num_offtopic_docs),
                             "--get_offtopic_docs",
-                            "--min_pmid", min_pmid,
-                            "--max_pmid", max_pmid,
+                            "--min_pmid", str(min_pmid),
+                            "--max_pmid", str(max_pmid),
                             "-m2",]
         subprocess.run(pubmed_offtopic_cmd, check=True)
     
