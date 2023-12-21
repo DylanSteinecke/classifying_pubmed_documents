@@ -61,14 +61,15 @@ if __name__ == "__main__":
     max_pmid = args.max_pmid
 
     ### Pick the GPU to use ###
-    os.system('nvidia-smi --query-gpu=utilization.gpu --format=csv')  
-    chosen_gpu_id = choose_least_utilized_gpu()
-    if chosen_gpu_id:
-        print(f"Chosen GPU: {chosen_gpu_id}")
+    ### Check for CUDA capability ###
+    if cuda.is_available():
+        print("CUDA is available. Using GPU.")
+        chosen_gpu_id = choose_least_utilized_gpu()
+        if chosen_gpu_id is not None:
+            print(f"Chosen GPU: {chosen_gpu_id}")
+            cuda.set_device(chosen_gpu_id)
     else:
-        Exception("Failed to determine GPU utilization.")
-    cuda.set_device(chosen_gpu_id)
-
+        print('!!!! NOTE: CUDA is not available. Using CPU !!!!')
     
     ########################
     ## Document Download  ##
