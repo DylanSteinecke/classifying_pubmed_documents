@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import argparse
+import json
 from pytorch_document_classifier import *
 
 
@@ -78,7 +79,7 @@ if __name__ == "__main__":
         ### Download ontopic documents ###
         print('*'*50, '\nobtaining labeled on-topic documents\n', '*'*50, '\n')
         pubmed_doc_cmd = [
-            "python", 'get_pubmed_docs.py', 
+            "python3", 'get_pubmed_docs.py', 
                             '--topic', topic,
                             '--download_mesh_tree',
                             '--get_docs_on_pubmed',
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         ### Download offtopic documents ###
         print('\n', '*'*50, '\n'+ 'obtaining labeled off-topic documents', '\n', '*'*50, '\n')
         pubmed_offtopic_cmd = [
-            "python", "get_offtopic_or_unlabeled_docs.py",
+            "python3", "get_offtopic_or_unlabeled_docs.py",
                            "--topic",  topic,
                             "--num_of_pmids", str(num_offtopic_docs),
                             "--get_offtopic_docs",
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         ### Download unlabeled documents ###
         print('\n', '*'*50, '\n'+ 'obtaining unlabeled documents', '\n', '*'*50, '\n')
         pubmed_unlabeled_cmd = [
-            "python", "get_offtopic_or_unlabeled_docs.py",
+            "python3", "get_offtopic_or_unlabeled_docs.py",
                             "--topic",  topic,
                             "--num_of_pmids", str(num_offtopic_docs),
                             "--get_unlabeled_docs",
@@ -113,49 +114,55 @@ if __name__ == "__main__":
         subprocess.run(pubmed_unlabeled_cmd, check=True)
 
 
-'''
-##########################
-## Stage One Classifier ##
-##########################
-off_topic_class_num = len(json.load(open(f'input/{topic}_tree_numbers.json')))
+
+    ##########################
+    ## Stage One Classifier ##
+    ##########################
+    off_topic_class_num = len(json.load(open(f'input/{topic}_tree_numbers.json')))
     
-# Train Model
-if args.train_stage_one_classifier:
+    # Train Model
+    if args.train_stage_one_classifier:
         
-    # Load Training Data    
-    path_to_labeled_feature_matrix_path = f'output/{topic}/{topic}_original_feature_matrix_path.txt'
-    with open(path_to_feature_matrix_path,'r') as fin:
-        labeled_feature_matrix_path = fin.readlines()[0].strip()
+        # Load Training Data    
+        path_to_labeled_feature_matrix_path = f'output/{topic}/{topic}_original_feature_matrix_path.txt'
+        with open(path_to_labeled_feature_matrix_path,'r') as fin:
+            labeled_feature_matrix_path = fin.readlines()[0].strip()
         
-    # Train Naive Bayes classifier 
-    print('\n', '*'*50, '\n'+ 'Running Naive Bayes classifier', '\n', '*'*50, '\n')
-    naive_bayes_cmd = [
-        "python", "./NBC/NBC.py",
-                        "--run_mode", "train_test",
-                        "--input_path", labeled_feature_matrix_path,
-                        "--off_topic_class", str(off_topic_class_num),
-                        "--topic",  topic,
-                      ]
-    subprocess.run(naive_bayes_cmd, check=True)
+        #Output Path 
+        out_path = f"output/{topic}"
+            
+        # Train Naive Bayes classifier 
+        print('\n', '*'*50, '\n'+ 'Running Naive Bayes classifier', '\n', '*'*50, '\n')
+        naive_bayes_cmd = [
+            "python3", "./NBC/NBC.py",
+                            "--run_mode", "train_test",
+                            "--input_path", labeled_feature_matrix_path,
+                            "--off_topic_class", str(off_topic_class_num),
+                            "--topic",  topic,
+                            "--out_path", out_path
+                        ]
+        subprocess.run(naive_bayes_cmd, check=True)
 
-# Inference Time / Deploy Model
-elif args.run_stage_one_classifier:
-    # Load unlabeled data 
-    path_to_unlabeled_feature_matrix_path = f'output/{topic}/{topic}_unlabeled_{num_offtopic_docs}_docs_feature_matrix_path.txt' 
-    with open(path_to_unlabeled_feature_matrix_path,'r') as fin:
-        unlabeled_feature_matrix_path = fin.readlines()[0].strip()
-    naive_bayes_cmd = [
-        "python", "./NBC/NBC.py",
-                        "--run_mode", "predict_unlabeled ",
-                        #"--input_path", labeled_feature_matrix_path,
-                        "--off_topic_class", str(off_topic_class_num),
-                        "--topic",  topic,
-                        "--unlabeled_docs_path", unlabeled_feature_matrix_path,
-                      ]
-    subprocess.run(naive_bayes_cmd, check=True)
+    # Inference Time / Deploy Model
+    elif args.run_stage_one_classifier:
+        # Load unlabeled data 
+        path_to_unlabeled_feature_matrix_path = f'output/{topic}/{topic}_unlabeled_{num_unlabeled_docs}_docs_feature_matrix_path.txt' 
+        with open(path_to_unlabeled_feature_matrix_path,'r') as fin:
+            unlabeled_feature_matrix_path = fin.readlines()[0].strip()
+            
+        #Output Path 
+        out_path = f"output/{topic}"
+        
+        naive_bayes_cmd = [
+            "python", "./NBC/NBC.py",
+                            "--run_mode", "predict_unlabeled ",
+                            "--topic",  topic,
+                            "--unlabeled_docs_path", unlabeled_feature_matrix_path,
+                            "--out_path", out_path
+                        ]
+        subprocess.run(naive_bayes_cmd, check=True)
 
-
-    
+'''    
     ###########################
     ## Stage Two Classifier  ##
     ###########################
