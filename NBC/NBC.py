@@ -18,8 +18,10 @@ nltk.download('wordnet')
 nltk.download('punkt')
 
 class NBC:
-    def __init__(self, num_classes, off_topic_class , input_path, out_path = './output'):
+    def __init__(self, num_classes, off_topic_class , input_path, out_path, topic):
       self.description = 'Naive Bayes Classifier for PubMed Documents'
+      #topic being studied 
+      self.topic = topic
       self.num_classes = num_classes
       #initialize variable to store # of documents in each class
       self.num_docs_per_class = None
@@ -72,23 +74,26 @@ class NBC:
       mat = pd.read_csv(self.input_path)
 
       # Filter out documents without abstracts and filter out documents with multiple mesh labels
-      mat_filt = (mat[~mat.topic_labels.str.contains(',')]
-                  .dropna(subset=['abstract']))
+      try: 
+        mat_filt = (mat[~mat.topic_labels.str.contains(',')].dropna(subset=['abstract']))
+      except: 
+        mat_filt = mat.dropna(subset=['abstract'])
+        pass 
 
       # Change labels column to integers
-      mat_filt['labels'] = mat_filt['topic_labels'].astype(int)
+      mat_filt.loc[:, 'labels'] = mat_filt['topic_labels'].astype(int)
 
       # Concatenate titles and abstracts
-      mat_filt['abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
+      mat_filt.loc[:, 'abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
       self.df = mat_filt
 
       ## Combine documents that are in disease of interest (on topic) into one group --> 1
       ## Replace documents that are off_toic with label --> 0
       ## E.g. combine systolic and diastolic HF docs into one class to compare to non HF docs
-      self.df['labels'] = self.df['labels'].apply(
-          lambda x: 0 if x == self.off_topic_class else 1
+      self.df.loc[:, 'labels'] = self.df['labels'].apply(
+          lambda x: 1 if x == self.off_topic_class else 0
       )
-      self.off_topic_class = 0
+      self.off_topic_class = 1
 
       # extract number of documents in each class
       self.num_docs_per_class = {idx : count for count, idx in zip(self.df.labels.value_counts(),self.df.labels.value_counts().index)}
@@ -123,7 +128,7 @@ class NBC:
         self.class_word_counts[label].update(tokens)
 
       #### Output the word counts in each class into a txt file #####
-      output_filename = 'class_word_counts.txt'
+      output_filename = f'NBC_class_word_counts_{self.topic}.txt'
       file_path = os.path.join(self.directory, output_filename)
 
       #create directory
@@ -152,7 +157,7 @@ class NBC:
           self.loglikelihoods[label][word] = np.log(likelihood)
 
       # save the loglikelihoods to a file similar to what you did for word_counts
-      output_filename_likelihood = 'loglikelihoods.txt'
+      output_filename_likelihood = f'NBC_loglikelihoods_{self.topic}.txt'
       file_path_likelihood = os.path.join(self.directory, output_filename_likelihood)
       with open(file_path_likelihood, 'w') as file:
           for label, likelihoods in self.loglikelihoods.items():
@@ -178,7 +183,7 @@ class NBC:
 
       ### Output csv of test docs that were predicted to be on topic
       on_topic_pred = self.df[self.df.index.isin(self.hf_pred_docs)]
-      on_topic_pred.to_csv(f'{self.directory}/test_docs_pred_ontopic.csv')
+      on_topic_pred.to_csv(f'{self.directory}/NBC_test_docs_pred_ontopic_{self.topic}.csv')
 
       #### Output the prediction metrics into a txt file #####
       output_filename = 'test_prediction_metrics.txt'
@@ -217,7 +222,7 @@ class NBC:
       fig, ax = plt.subplots()
       ConfusionMatrixDisplay(cm).plot(ax=ax)
       # Save the plot to a file
-      plt.savefig(f'{self.directory}/confusion_matrix.png')
+      plt.savefig(f'{self.directory}/NBC_confusion_matrix_{self.topic}.png')
       # Close the plot to free memory
       plt.close(fig)
 
@@ -236,7 +241,7 @@ class NBC:
       df['NBC_Predicted_Class'] = pred_class
 
       #Save df as csv file 
-      output_file = 'unlabeled_docs_prediction.csv'
+      output_file = f'NBC_unlabeled_docs_prediction_{self.topic}.csv'
       file_path = os.path.join(self.directory, output_file)
       df.to_csv(file_path)
 
@@ -245,10 +250,11 @@ def main():
     parser = argparse.ArgumentParser(description='Naive Bayes Classifier for PubMed Documents')
 
     # Add arguments
+    parser.add_argument('--topic', type=str, help='Topic name') 
     parser.add_argument('--num_classes', type=int, default = 2, help='Number of classes')
     parser.add_argument('--off_topic_class', type=int, help='Class that contains documents not in disease of interest')
     parser.add_argument('--input_path', type=str, help='Path to input CSV file')
-    parser.add_argument('--out_path', type=str, default='./output', help='Path for output directory (default is ./output)')
+    parser.add_argument('--out_path', type=str, help='Path for output directory')
     parser.add_argument('--unlabeled_docs_path', type=str, help='Path for unlabeled documents CSV file that contains a column with title abstract')
     parser.add_argument('--run_mode', type=str, choices=['train_test', 'predict_unlabeled'], required=True, help='Mode to run the script: "train_test" or "predict_unlabeled"')
 
@@ -256,7 +262,7 @@ def main():
     args = parser.parse_args()
 
     # Create an instance of the NBC class with the provided arguments
-    nbc = NBC(args.num_classes, args.off_topic_class, args.input_path, args.out_path)
+    nbc = NBC(args.num_classes, args.off_topic_class, args.input_path, args.out_path, args.topic)
 
     if args.run_mode == 'train_test':
         nbc.prepare_feature_matrix()
@@ -267,10 +273,6 @@ def main():
     elif args.run_mode == 'predict_unlabeled':
         if not args.unlabeled_docs_path:
             raise ValueError("Unlabeled documents path is required for 'predict_unlabeled' mode")
-        nbc.prepare_feature_matrix()
-        nbc.prior_c()
-        nbc.train()
-        nbc.predict_test_split()
         nbc.predict_unlabeled(args.unlabeled_docs_path)
 
 if __name__ == "__main__":
