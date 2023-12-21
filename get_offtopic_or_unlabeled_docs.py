@@ -6,9 +6,9 @@ import os
 import argparse
 
 
-def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=0, max_pmid=99999999, get_offtopic_docs=False, get_unlabeled_docs=False):
+def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=0, max_pmid=38000000, get_offtopic_docs=False, get_unlabeled_docs=False):
     print('Getting the PMIDs of the "other" category documents...')
-    feature_matrix_for_ontopic_categories_path = f'output/feature_matrix_{topic}.csv'
+    feature_matrix_for_ontopic_categories_path = f'output/{topic}/feature_matrix_{topic}.csv'
     topic_name = topic.split("_")[0]
     categories_of_interest_path = f'input/{topic_name}_tree_numbers.json'
     
@@ -17,38 +17,46 @@ def get_offtopic_or_unlabeled_pmids(topic, num_of_pmids, min_pmid=0, max_pmid=99
         num_categories = len(json.load(open(categories_of_interest_path)))
         label = num_categories
         pmids = np.random.randint(min_pmid, max_pmid, size=num_of_pmids).astype(str).tolist()
-        pmids_to_new_category_path = f'output/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
-        print()
+        pmids_to_new_category_path = f'output/{topic}/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
+        print('Getting off-topic PMIDs...')
     elif get_unlabeled_docs:
         label = -1
         pmids = list(range(min_pmid, min_pmid+num_of_pmids))
-        pmids_to_new_category_path = f'output/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
+        pmids_to_new_category_path = f'output/{topic}/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
+        print('Getting unlabeled PMIDs...')
+    else:
+        raise Exception('Specify unlabeled or offtopic')
         
-    # ensures on topic pmids are not included 
-    pmids_of_categories_path = f'output/pmid_to_category_{topic}.json'
+    # Excludes ontopic pmids
+    pmids_of_categories_path = f'output/{topic}/pmid_to_category_{topic}.json'
     pmids_of_categories = list(json.load(open(pmids_of_categories_path)).keys())
     pmids_not_of_categories = list(set(pmids).difference(set(pmids_of_categories)))
     pmids_to_new_category = {pmid:[label] for pmid in pmids_not_of_categories}
+    print('PMIDs', len(set(pmids)))
+    print('PMIDs of categories', len(set(pmids_of_categories)))
+    print('PMIDs not of categories', len(pmids_not_of_categories))
+    print('PMIDs to new category', len(pmids_to_new_category))
     
-    # saving pmids to categories mapping (pmids to off topic or pmids to unlabeled)
+    # Saving pmids-to-categories mapping (pmids to off topic or pmids to unlabeled)
     with open(pmids_to_new_category_path,'w') as fout:
         json.dump(pmids_to_new_category, fout)
     print('Done!')
+    
         
 def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, get_unlabeled_docs):
     '''Download documents'''
     print('Downloading the "other" category documents...(output will be displayed at the end of function execution)')
 
     if get_offtopic_docs:
-        pmid_to_offtopic_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
-        offtopic_feature_matrix_path = f'output/feature_matrix_less_than_{num_of_pmids}_non_{topic}.csv'
+        pmid_to_offtopic_categories_path = f'output/{topic}/pmid_to_category_less_than_{num_of_pmids}_non_{topic}.json'
+        offtopic_feature_matrix_path = f'output/{topic}/feature_matrix_less_than_{num_of_pmids}_non_{topic}.csv'
         os.system('python3 get_pubmed_docs.py --get_docs_on_pubmed '+\
                                           f'--pmid_to_cat {pmid_to_offtopic_categories_path} '+\
                                           f'--ft_mtrx_pth {offtopic_feature_matrix_path} '+\
                                           f'--get_offtopic_docs')
     elif get_unlabeled_docs:
-        pmid_to_unlabeled_categories_path = f'output/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
-        unlabeled_feature_matrix_path = f'output/feature_matrix_less_than_{num_of_pmids}_unlabeled_{topic}.csv'
+        pmid_to_unlabeled_categories_path = f'output/{topic}/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
+        unlabeled_feature_matrix_path = f'output/{topic}/feature_matrix_less_than_{num_of_pmids}_unlabeled_{topic}.csv'
         os.system('python3 get_pubmed_docs.py --get_docs_on_pubmed '+\
                                           f'--topic {topic} ' +\
                                           f'--pmid_to_cat {pmid_to_unlabeled_categories_path} '+\
@@ -59,11 +67,11 @@ def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, 
         
 def merge_ontopic_and_offtopic_feature_matrices(topic, merge_matrix_option_1, merge_matrix_option_2):
     print('Combining the main categories and other category feature matrices...')
-    feature_matrix_for_ontopic_categories_path = f'output/feature_matrix_{topic}.csv'
+    feature_matrix_for_ontopic_categories_path = f'output/{topic}/feature_matrix_{topic}.csv'
     num_topic_pmids = len(pd.read_csv(feature_matrix_for_ontopic_categories_path))
-    feature_matrix_for_offtopic_category_path = f'output/feature_matrix_less_than_{num_of_pmids}_non_{topic}.csv'
+    feature_matrix_for_offtopic_category_path = f'output/{topic}/feature_matrix_less_than_{num_of_pmids}_non_{topic}.csv'
     actual_num_of_pmids = len(pd.read_csv(feature_matrix_for_offtopic_category_path))
-    combined_feature_matrix_path = f'output/feature_matrix_{actual_num_of_pmids}_non_{topic}_{num_topic_pmids}_{topic}.csv'
+    combined_feature_matrix_path = f'output/{topic}/feature_matrix_{actual_num_of_pmids}_non_{topic}_{num_topic_pmids}_{topic}.csv'
 
     if merge_matrix_option_1:
         '''
@@ -114,7 +122,7 @@ def merge_ontopic_and_offtopic_feature_matrices(topic, merge_matrix_option_1, me
         print('Specify a merging strategy')
         return
     
-    with open(f'output/{topic}_original_feature_matrix_path.txt','w') as fout:
+    with open(f'output/{topic}/{topic}_original_feature_matrix_path.txt','w') as fout:
         fout.write(combined_feature_matrix_path)
     
     print('Done!')
@@ -146,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_of_pmids', '-n',
                         type=int, default=10000)
     parser.add_argument('--max_pmid', '-max',
-                        type=int, default=99999999999, help='Maximum PMID ID number')
+                        type=int, default=38000000, help='Maximum PMID ID number')
     parser.add_argument('--min_pmid', '-min',
                         type=int, default=0, help='Minumum PMID ID number')
     parser.add_argument('--get_offtopic_docs', '-off',
@@ -170,6 +178,8 @@ if __name__ == '__main__':
     get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
     if get_labeled_docs == True and get_unlabeled_docs == True:
         Exception('Pick either "get_offtopic_docs" or "get_unlabeled_docs"')
+    if not os.path.exists(f'output/{topic}'):
+        os.makedirs(f'output/{topic}')
     
     ## Note TO DYLAN -> add enough pmids to match the number specified ?
     

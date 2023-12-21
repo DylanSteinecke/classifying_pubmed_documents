@@ -171,7 +171,7 @@ def get_all_pmids(pmid_to_categories_path):
     return all_pmids
     
 
-def submit_pmids_get_article_xml(pmids, retmax=10000):
+def submit_pmids_get_article_xml(pmids, topic, retmax=10000):
     '''Submits a batch of PMIDs to PubMed, retrieves the document text,
        outputs it to a file, and repeats the process for a new batch to be
        saved to a new file. These are then iterated through in the next 
@@ -194,7 +194,7 @@ def submit_pmids_get_article_xml(pmids, retmax=10000):
             'id': pmid_batch,
         }
         response = requests.post(url=base_url, params=params, data=data)
-        with open(f'output/response_text_{batch_num}.json','w') as fout:
+        with open(f'output/{topic}/response_text_{batch_num}.json','w') as fout:
             json.dump(response.text, fout)
         time.sleep(1)
         
@@ -228,7 +228,7 @@ def extract_pmid_title_abstract(topic,
         for batch_num, batch_idx in enumerate(range(0, len(queried_pmids), retmax)):
             pmid_batch = queried_pmids[batch_idx:batch_idx+retmax]
             print('Loading', len(pmid_batch), 'in batch ', batch_num)
-            with open(f'output/response_text_{batch_num}.json','r') as fin:
+            with open(f'output/{topic}/response_text_{batch_num}.json','r') as fin:
                 articles_xml_text = json.load(fin)
 
             # Preprocess the document xml text
@@ -313,10 +313,10 @@ def extract_pmid_title_abstract(topic,
                     
                 ### Final (Features || Labels)
                 writer.writerow([pmid, title, abstract, ','.join(topic_labels)])
-            os.remove(f'output/response_text_{batch_num}.json')
+            os.remove(f'output/{topic}/response_text_{batch_num}.json')
 
         if get_unlabeled_docs:
-            with open(f'output/{topic}_unlabeled_{max_num_docs}_docs_feature_matrix_path.txt', 'w') as fout:
+            with open(f'output/{topic}/{topic}_unlabeled_{max_num_docs}_docs_feature_matrix_path.txt', 'w') as fout:
                 fout.write(feature_matrix_outpath)
         if verbose:
             print('PMIDs:', num_pmids)
@@ -364,6 +364,8 @@ if __name__ == '__main__':
     get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
     get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
     topic = args.topic
+    if not os.path.exists(f'output/{topic}'):
+        os.makedirs(f'output/{topic}')
 
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
@@ -401,6 +403,7 @@ if __name__ == '__main__':
         all_pmids = get_all_pmids(pmid_to_categories_path)
         print(len(all_pmids), 'all pmids')
         submit_pmids_get_article_xml(all_pmids, 
+                                     topic,
                                      batch_size,)
         extract_pmid_title_abstract(topic,
                                     all_pmids,
