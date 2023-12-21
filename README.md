@@ -65,20 +65,34 @@ Flags:
 ### pre_filter_document_classifier.py [In progress]
 This applies a preliminary document classifier. (Naive Bayesian Classifier) It is intended to have high on-topic recall and moderate precision, intending to filter out the off-topic documents. By this we mean that the documents studying topics that you have not chosen (e.g., other than 3 types of heart failure) will be filtered out. They will then be fed to the ostensibly high precision PyTorch-based transformer language model classifier which will categorize the documents by topic. This step is important because there is a massive class imbalance for most small sets of topics compared to all other topics (e.g., ~5,000 documents on any type of heart failure, ~38,000,000 documents on all other topics), so by filtering out the majority of the off-topic documents, it can not only expedite but also improve the final classifier. 
 
-```
-python run_document_classifier.py --topic eye \
-                                  --num_ontopic_topic_docs 1000 \
-                                  --num_offtopic_docs 1000 \
-                                  --num_unlabeled_docs 1000 \
-                                  --download_docs
-```
-
-```
-python run_document_classifier.py --topic eye --train_stage_one_classifier
-```
-
 ### pytorch_document_classifier.py
 This is the transformer-based language model that is fine-tuned to classify documents by topic. The training and testing is implemented in PyTorch. Users can specify the model, epochs, etc. 
 
 ### run_document_classifier.py
 This runs the entire pipeline to download on-topic (get_pubmed_docs.py) and off-topic (get_offtopic_or_unlabeled_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
+Example Usage (Downloading Documents):
+```
+python run_document_classifier.py --topic eye \
+                                  --num_ontopic_topic_docs 1000 \
+                                  --num_offtopic_docs 1000 \
+                                  --num_unlabeled_docs 1000 \
+                                  --download_docs \
+```
+Example Usage (Train Stage 1 Classifier / Naive Bayes Classifier)
+```
+python run_document_classifier.py --topic eye \
+                                  --train_stage_one_classifier \
+```
+Example Usage (Train Stage 2 Classifier / Fine Tune the Pre-Trained Transformer Language Model)
+```
+python run_document_classifier.py --topic eye \
+                                  --train_stage_two_classifier \
+                                  --use_stage_one_predictions \
+```
+Example Usage (Deploy Stage 1 and 2 Classifiers)
+```
+python run_document_classifier.py --topic eye \
+                                  --run_stage_one_classifier \
+                                  --run_stage_two_classifier \
+                                  --use_stage_one_predictions \
+```
