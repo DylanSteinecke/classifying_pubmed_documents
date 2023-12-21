@@ -56,7 +56,7 @@ def get_offtopic_or_unlabeled_documents(num_of_pmids, topic, get_offtopic_docs, 
                                           f'--get_offtopic_docs')
     elif get_unlabeled_docs:
         pmid_to_unlabeled_categories_path = f'output/{topic}/pmid_to_category_less_than_{num_of_pmids}_unlabeled_{topic}.json'
-        unlabeled_feature_matrix_path = f'output/{topic}/feature_matrix_less_than_{num_of_pmids}_unlabeled_{topic}.csv'
+        unlabeled_feature_matrix_path = f'output/{topic}/{num_of_pmids}_unlabeled_docs_feature_matrix_path.csv'
         os.system('python3 get_pubmed_docs.py --get_docs_on_pubmed '+\
                                           f'--topic {topic} ' +\
                                           f'--pmid_to_cat {pmid_to_unlabeled_categories_path} '+\
