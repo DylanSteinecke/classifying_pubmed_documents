@@ -5,79 +5,102 @@ import time
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 
+# Transformers
 from transformers import AutoTokenizer, AutoModel, get_scheduler
 from transformers import BertForSequenceClassification, BertTokenizer
 from transformers import TrainingArguments, AutoModelForSequenceClassification, DataCollatorWithPadding
 
+# PyTorch
 import torch
 import torch.nn as nn
 from torch.nn.functional import cross_entropy
 from torch.optim import AdamW 
 from torch.utils.data import DataLoader
 
+# Sklearn
 from sklearn.metrics import precision_recall_fscore_support, brier_score_loss, classification_report
 from sklearn.model_selection import train_test_split
-
+from sklearn.utils import resample
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.calibration import calibration_curve
 
 
 
-def prepare_feature_matrix(feature_matrix_path, use_head=False):
-    mat = pd.read_csv(feature_matrix_path)
 
-    # Filter for documents with abstracts
-    try:
-        mat_filt = mat[~mat[topic_labels.str.contains(',')]]
-    except:
-        mat_filt = mat
-        pass
-    
-    mat_filt = mat_filt.dropna(subset=['abstract'])
+def prepare_feature_matrix(feature_matrix_path, test_size=0.5, upsample_train=True):
+    df = pd.read_csv(feature_matrix_path)
 
-    # Filter for PMIDs with one label
-    mat_filt.loc[mat_filt['topic_labels'].apply(lambda x: isinstance(x, int))] 
+    # Remove documents without an abstract
+    df = df.dropna(subset=['abstract'])
 
     # Concatenate titles and abstracts
-    mat_filt.loc[:, 'abstract'] = mat_filt['title'] + ' ' + mat_filt['abstract']
-    
-    # Use either the first rows (use_head) or the whole matrix
-    if use_head:
-        other_label = max([int(label) for label in mat_filt['topic_labels'].tolist()])
-        head_len = len(mat_filt) - mat_filt['topic_labels'].value_counts()[other_label] * 2
-        if head_len < 0:
-            head_len = len(mat_filt)
-        my_matrix = mat_filt[['abstract', 'topic_labels']].head(head_len)
-    else:
-        # use all rows
-        my_matrix = mat_filt[['abstract', 'topic_labels']]
+    if 'title' in df.columns:
+        df.loc[:, 'abstract'] = df['title']+' '+df['abstract']
+        df = df.drop('title', axis=1) 
 
-    # Convert the filtered dataframe to a HuggingFace Dataset
-    my_dataset = (Dataset.from_pandas(my_matrix)
-                  .rename_column('topic_labels', 'labels')
-                  .remove_columns('__index_level_0__'))
-
-    # Split the dataset manually using scikit-learn
-    X = my_dataset['abstract']
-    y = my_dataset['labels']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+    # Remove documents with more than 1 label of interest
+    df = df[~df['labels'].astype(str).str.contains(',')]    
+    df.loc[df['labels'].apply(lambda x: isinstance(x, int))] 
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     # Create train and test datasets
-    train_dataset = Dataset.from_pandas(pd.DataFrame({'abstract': X_train, 'labels': y_train}))
-    test_dataset = Dataset.from_pandas(pd.DataFrame({'abstract': X_test, 'labels': y_test}))
+    X = df['abstract']
+    y = df['labels']
+    X_train, X_test, y_train, y_test = (
+        train_test_split(X, y, test_size=test_size, stratify=y))
+
+    # Train dataset
+    train_df = pd.DataFrame({'abstract': X_train, 'labels': y_train}).reset_index(drop=True)
+    if upsample_train:
+        train_df = upsample_dataset(train_df, 'labels') # note: tokenize first for speed?
+    train_dataset = Dataset.from_pandas(train_df)
+
+    # Test dataset
+    test_df = pd.DataFrame({'abstract': X_test, 'labels': y_test}).reset_index(drop=True)
+    test_dataset = Dataset.from_pandas(test_df)
 
     # Combine train and test datasets into a dictionary
-    combined_dataset = {'train': train_dataset, 'test': test_dataset}
+    combined_dataset = {'train': train_dataset, 
+                        'test': test_dataset}
 
     return combined_dataset
 
 
+def upsample_dataset(df, label_col='labels'):
+    '''For upsampling the training dataset to make classes balanced'''
+    num_classes = len(set(df[label_col]))
+    positive_examples = df[df[label_col] < num_classes-1]
+    negative_examples = df[df[label_col] == num_classes-1]
+    
+    # Upsample positive examples if there are less of them
+    if len(positive_examples) < len(negative_examples) :
+        positive_upsampled = resample(positive_examples,
+                                      replace=True,
+                                      n_samples=len(negative_examples),
+                                      random_state=316)
+        upsampled_df = pd.concat([negative_examples, 
+                                  positive_upsampled])
+    # Upsample negative examples if there are less of them
+    elif len(negative_examples) < len(positive_examples):
+        negative_upsampled = resample(negative_examples,
+                                      replace=True,
+                                      n_samples=len(positive_examples),
+                                      random_state=316)
+        upsampled_df = pd.concat([positive_examples, 
+                                  negative_upsampled])
+
+    upsampled_df = upsampled_df.sample(frac=1, random_state=316).reset_index(drop=True)
+    
+    return upsampled_df
+
+
+# Currently this is too hardcoded. Also, it is intended for multi-class classification. 
 def convert_hf_ft_matrix_to_two_classes(input_file):
     df_6 = pd.read_csv(f'output/{input_file}.csv')
-    df_6['topic_labels'] = df_6['topic_labels'].replace(['0','1','2','3','4'], '0')
-    df_6['topic_labels'] = df_6['topic_labels'].replace('5', '1')
+    df_6['labels'] = df_6['labels'].replace(['0','1','2','3','4'], '0')
+    df_6['labels'] = df_6['labels'].replace('5', '1')
     df_2 = df_6
-    df_2.to_csv(f'input/{input_file}_2_classes.csv')
+    df_2.to_csv(f'input/{input_file}_2_classes.csv', index=False)
 
     
     
@@ -89,10 +112,14 @@ def compute_metrics(logits, labels, num_labels):
 
     # Precision, recall, F1
     precision, recall, f1, _ = precision_recall_fscore_support(
-                                  labels, predictions, average='macro')
+                                  labels, predictions, average='macro') # Dylan, question?
+    target_names = [str(label) for label in range(num_labels)]
+    print('num_labels', num_labels)
+    print('labels', labels)
+    print('target_names', target_names)
     conf_matrix = classification_report(labels, 
                                     predictions, 
-                                    target_names=[str(label) for label in range(num_labels)])
+                                    target_names=target_names) # if number of classes does not match target_names size, it may be because there are not any examples predicted correctly in a certain class
     
     # Accuracy
     correct = {i: 0 for i in range(num_labels)}
@@ -121,46 +148,52 @@ def flatten_list(the_list):
     return flat_list
     
     
-   ## fix for multi class
-def plot_probability_calibration_curve(logits, labels, model_name):
-    probabilities = torch.nn.functional.softmax(torch.tensor(logits).cpu(), dim=-1)
-    positive_probabilities = probabilities[:,1]
 
-    b_score = brier_score_loss(labels, positive_probabilities)
-    print("Brier Score :",b_score)
-
-    # True and Predicted Probabilities
-    true_pos, pred_pos = calibration_curve(labels, 
-                                           positive_probabilities, 
-                                           n_bins=10)
-
-    #Plot the Probabilities Calibrated curve
-    plt.plot(pred_pos, true_pos, marker='o', linewidth=1, label=model_name)
-    plt.plot([0, 1], [0, 1], linestyle='--', label='Perfectly Calibrated')
-    plt.title('Probability Calibration Curve')
-    plt.xlabel('Predicted Probability')
-    plt.ylabel('True Probability')
-    plt.legend(loc='best')
-    plt.show()
-    plt.savefig(f'output/prob_calibration_curve_{model_name}.png')
-    
-    # Plot a histogram of the predicted probability of a positive class
-    plt.hist(positive_probabilities);
-    plt.title('Positive Probabilities')
-    plt.xlabel('Predicted Probability')
-    plt.savefig(f'output/pred_prob_histogram_{model_name}.png')
 
 
 class DocumentClassifier:
     
-    def __init__(self, dataset):
+    def __init__(self, dataset, topic, stage_num):
         self.dataset = dataset
+        self.topic = topic
+        self.out_dir = f'output/{topic}'
+        self.stage_num = stage_num
+        
+   ## fix for multi class
+    def plot_probability_calibration_curve(logits, labels, model_name):
+        probabilities = torch.nn.functional.softmax(torch.tensor(logits).cpu(), dim=-1)
+        positive_probabilities = probabilities[:,1]
+
+        b_score = brier_score_loss(labels, positive_probabilities)
+        print("Brier Score :",b_score)
+
+        # True and Predicted Probabilities
+        true_pos, pred_pos = calibration_curve(labels, 
+                                               positive_probabilities, 
+                                               n_bins=10)
+
+        #Plot the Probabilities Calibrated curve
+        plt.plot(pred_pos, true_pos, marker='o', linewidth=1, label=model_name)
+        plt.plot([0, 1], [0, 1], linestyle='--', label='Perfectly Calibrated')
+        plt.title('Probability Calibration Curve')
+        plt.xlabel('Predicted Probability')
+        plt.ylabel('True Probability')
+        plt.legend(loc='best')
+        plt.show()
+        plt.savefig(f'{self.out_dir}/prob_calibration_curve_{model_name}.png')
+
+        # Plot a histogram of the predicted probability of a positive class
+        plt.hist(positive_probabilities);
+        plt.title('Positive Probabilities')
+        plt.xlabel('Predicted Probability')
+        plt.savefig(f'{self.out_dir}/pred_prob_histogram_{model_name}.png')
+        
         
     def classify_documents(self, model_name, epochs,
                            num_labels, batch_size=16, 
                            model_name_suffix='', lr=3e-5, 
-                           logfile='output/log.txt',
                            save_model=False):
+        logfile=f'{self.out_dir}/{model_name}_{model_name_suffix}_log.txt'
         self.model_name = model_name
         self.epochs = epochs
         self.num_labels = num_labels
@@ -171,6 +204,7 @@ class DocumentClassifier:
         if '\\' and '_' in model_name: 
             model_name = model_name.split('/')[1].split('_')[0]
         model_file = f'{model_name}_{epochs}_epochs_{num_labels}_classes_{model_name_suffix}'
+        
         
         ''' 
         Base model
@@ -192,24 +226,26 @@ class DocumentClassifier:
         device = torch.device('cuda')
         model.to(device)
 
+        
         ''' 
         Dataset
         '''
         dataset = self.dataset
         # Tokenize the train and test datasets separately
-        train_tokenized = dataset["train"].map(lambda x: tokenizer(
-                              x["abstract"],
+        train_tokenized = dataset['train'].map(lambda x: tokenizer(
+                              x['abstract'],
                               truncation=True,
-                              max_length=512, ))
-        test_tokenized = dataset["test"].map(lambda x: tokenizer(
-                              x["abstract"],
+                              max_length=512,))
+        test_tokenized = dataset['test'].map(lambda x: tokenizer(
+                              x['abstract'],
                               truncation=True,
-                              max_length=512, ))
+                              max_length=512,))
 
         # Merge the tokenized train and test datasets into a single dataset
         train_tokenized = train_tokenized.remove_columns('abstract').with_format('torch')
         test_tokenized = test_tokenized.remove_columns('abstract').with_format('torch')
-        tokenized_datasets = {"train": train_tokenized, "test": test_tokenized}
+        tokenized_datasets = {'train': train_tokenized, 
+                              'test': test_tokenized}
         data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
         # Turn dataset into a PyTorch dataloader
@@ -223,6 +259,7 @@ class DocumentClassifier:
                                 batch_size=batch_size, 
                                 collate_fn=data_collator,)
 
+        
         ''' 
         Hyperparameters 
         '''
@@ -244,7 +281,7 @@ class DocumentClassifier:
 
 
         '''
-        Model training
+        Model training & testing
         '''
         with open(logfile,'w') as fout_log:
 
@@ -277,32 +314,52 @@ class DocumentClassifier:
 
 
                 ''' 
-                Validation
+                Testing/Validation
                 '''
                 model.eval()
+                val_examples, val_predicted_labels = [], []
                 with torch.no_grad():
                     for val_batch_num, val_batch in enumerate(eval_dataloader):
                         val_batch = {k:v.to(device) for k,v in val_batch.items()}
                         outputs = model(**val_batch)
+                        logits = outputs.logits
 
                         # Validation Loss (Batch)
-                        logits = outputs.logits
                         labels = val_batch['labels']
                         val_loss = criterion(logits, labels)
                         total_val_loss += val_loss
 
                         # Validation Metrics (Batch)
-                        logits = outputs.get("logits")
+                        input_ids = val_batch['input_ids']
+                        input_ids = input_ids.cpu()
+                        val_batch_examples = [tokenizer.decode(ids, skip_special_tokens=True) for ids in input_ids]
+                        val_examples.extend(val_batch_examples)              # Text
+                        val_labels.extend([l.item() for l in labels.cpu()])  # True labels
                         val_logits.extend(logits.tolist())
-                        val_labels.extend([l.item() for l in labels])
+                        val_batch_preds = torch.argmax(logits, dim=1).cpu()
+                        val_batch_preds = [pred.item() for pred in val_batch_preds]
+                        val_predicted_labels.extend(val_batch_preds)   # Predicted labels
 
+                  
+                # Export examples (validation set, positive predicted subset of val. set)
+                val_set = pd.DataFrame({'abstract':val_examples, 
+                                        'true_label':val_labels, 
+                                        'predicted_label':val_predicted_labels,})
+                val_set.to_csv(f'{self.out_dir}/{self.topic}_val_set_epoch_{epoch}.csv', 
+                               index=False)
+                        
+                pos_classes = list(range(0, num_labels-1))
+                pos_pred_val_set = val_set[val_set['predicted_label'].isin(pos_classes)]
+                pos_pred_val_set = pos_pred_val_set.drop('predicted_label', axis=1)
+                outpath = f'{self.out_dir}/stage_{self.stage_num}_test_docs_pred_ontopic_{self.topic}.csv'
+                pos_pred_val_set.to_csv(outpath, index=False)
 
                 '''
                 Evaluation metrics
                 '''
                 # Training evaluation metrics
                 train_metrics = compute_metrics(train_logits, train_labels, num_labels)
-                print('Training Set Metrics')
+                print('\n\nTraining Set Metrics')
                 for metric_name, metric_num in train_metrics.items():
                     print(metric_name, metric_num)
                     fout_log.write(f'{metric_name} {metric_num}')
@@ -313,7 +370,7 @@ class DocumentClassifier:
 
                 # Validation evaluation metrics
                 val_metrics = compute_metrics(val_logits, val_labels, num_labels)
-                print('Validation Set Metrics')
+                print('\n\nValidation Set Metrics')
                 for metric_name, metric_num in val_metrics.items():
                     print(metric_name, metric_num)
                     fout_log.write(f'{metric_name} {metric_num}')
@@ -326,6 +383,8 @@ class DocumentClassifier:
                     best_val_loss = avg_val_loss
                     model_path = f'output/epoch_{epoch}_{model_name}_{epochs}_epochs_{num_labels}_classes_{model_name_suffix}'
                     torch.save(model.state_dict(), model_path)
+                    
+
 
         # Save logits (predictions, almost) and labels (true answers)
         with torch.no_grad():
@@ -347,12 +406,12 @@ class DocumentClassifier:
             
         if num_labels == 2:
             flat_val_labels = flatten_list([label.to('cpu').tolist() for label in val_labels])
-            plot_probability_calibration_curve(val_logits, flat_val_labels, model_name)
+            self.plot_probability_calibration_curve(val_logits, flat_val_labels, model_name)
         
 
         # Save model
         if save_model:
-            model.save_pretrained(f'output/{model_file}')
+            model.save_pretrained(f'{self.out_dir}/{model_file}')
         
         
         self.all_train_evals = all_train_evals

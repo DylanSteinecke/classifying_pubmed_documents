@@ -58,7 +58,7 @@ def parse_mesh_xml(year=-1):
     return root
 
 
-def align_mesh_trees_with_terms(root, mesh_roots = ('C','F03')):
+def align_mesh_trees_with_terms(root, mesh_roots = ('A','C','F03')):
     print('Aligning MeSH tree numbers with MeSH terms...')
     name_to_id, id_to_name, id_to_tree, tree_to_id, name_to_tree, tree_to_name = {},{},{},{},{},{}
     all_tree_numbers = list()
@@ -222,7 +222,7 @@ def extract_pmid_title_abstract(topic,
     # Open final text-to-label output file 
     with open(feature_matrix_outpath,'w') as fout:
         writer = csv.writer(fout)
-        writer.writerow(['pmid','title','abstract','topic_labels'])
+        writer.writerow(['pmid','title','abstract','labels'])
 
         # Load batch of documents' xml text
         for batch_num, batch_idx in enumerate(range(0, len(queried_pmids), retmax)):
