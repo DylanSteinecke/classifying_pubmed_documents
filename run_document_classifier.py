@@ -96,7 +96,7 @@ if __name__ == '__main__':
     if download:        
         ### Download ontopic documents ###
         print('*'*50, '\nobtaining labeled on-topic documents\n', '*'*50, '\n')
-        categories_path = f'input/{topic.split("_")[0]}_tree_numbers.json',
+        categories_path = f'input/{topic.split("_")[0]}_tree_numbers.json'
         cats_of_pmid_path = f'output/{topic}/category_of_pmids_{topic}.csv'
         pmid_to_cat_path = f'output/{topic}/pmid_to_category_{topic}.json'
         ft_mtrx_path = f'output/{topic}/feature_matrix_{topic}.csv'
