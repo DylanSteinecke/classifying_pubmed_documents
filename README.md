@@ -96,10 +96,69 @@ python run_document_classifier.py --topic heart \
 
 
 ```
-Example Usage (Deploy Stage 1 and 2 Classifiers)
+Example Usage (Deploy Stage 1, 2, & 3 Classifiers)
 ```
-python run_document_classifier.py --topic eye \
+python run_document_classifier.py --topic heart \
                                   --run_stage_one_classifier \
                                   --run_stage_two_classifier \
-                                  --use_stage_one_predictions \
+                                  --run_stage_three_classifier \
 ```
+
+## Next steps
+### Index the documents with ElasticSearch (include ground truth and predicted on-topic documents)
+```
+python index_documents.py --topic heart \
+                          --ground_truth \
+                          --predicted \
+                          --elastic_search
+```
+
+### Obtain a list of entities to search for (e.g., proteins)
+Search by GO term
+```
+python get_entities.py --topic heart \
+                       --entity_type proteins
+                       --go_terms GO:12345,GO:67890 \
+```
+
+Search entire human proteome
+```
+python get_entities.py --topic heart \
+                       --entity_type proteins \
+                       --human_proteome \
+```
+
+Search entire genome (Note: use keyword or gene2pubmed?)
+```
+python get_entities.py --topic heart \
+                       --entity_type genes \
+                       --human_genome \
+```
+
+
+### Count frequency of entities within the topics
+```
+python count_entities.py --topic heart \
+                         --entity_type proteins \
+                         --human_genome
+                         --ground_truth_docs \
+                         --predicted_docs \
+```
+
+
+Obtain a background/baseline of off-topic documents (e.g., all human proteins vs. background of non-heart documents)
+```
+python count_entities.py --topic heart \ 
+                         --entity_type proteins \
+                         --human_proteome \
+```
+
+### Compute final scores of associations between the entity (e.g., protein) and topic (e.g., organ)
+Compute an association of the protein frequencies within the topic of interest and within the off-topic category. Then, compare the two to find protein enrichment. 
+```
+python compute_score.py --topic heart \
+                        --entity_type proteins \
+                        --human_proteome \
+```
+
+Generate plots of frequency over year?
