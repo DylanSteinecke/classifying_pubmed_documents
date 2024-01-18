@@ -209,9 +209,9 @@ class NBC:
 
         with open(file_path_metrics, 'w') as file:
             # Accuracy 
-            print('self.y_test', self.y_test, '\n\n\nself.y_pred', self.y_pred)
-            print('len(self.y_test)', len(self.y_test), 
-                  '\n\n\nlen(self.y_pred)', len(self.y_pred))
+            #print('self.y_test', self.y_test, '\n\n\nself.y_pred', self.y_pred)
+            #print('len(self.y_test)', len(self.y_test), 
+            #      '\n\n\nlen(self.y_pred)', len(self.y_pred))
             self.accuracy_score = accuracy_score(self.y_test, self.y_pred)
             file.write(f'Accuracy Score: {self.accuracy_score}\n\n')
 

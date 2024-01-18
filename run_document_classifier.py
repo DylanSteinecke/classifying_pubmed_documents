@@ -96,7 +96,7 @@ if __name__ == '__main__':
     if download:        
         ### Download ontopic documents ###
         print('*'*50, '\nobtaining labeled on-topic documents\n', '*'*50, '\n')
-        categories_path = f'input/{topic.split("_")[0]}_tree_numbers.json',
+        categories_path = f'input/{topic.split("_")[0]}_tree_numbers.json'
         cats_of_pmid_path = f'output/{topic}/category_of_pmids_{topic}.csv'
         pmid_to_cat_path = f'output/{topic}/pmid_to_category_{topic}.json'
         ft_mtrx_path = f'output/{topic}/feature_matrix_{topic}.csv'
@@ -110,11 +110,11 @@ if __name__ == '__main__':
                             '--cats_of_pmids', cats_of_pmid_path,
                             '--pmid_to_cat', pmid_to_cat_path,
                             '--ft_mtrx_pth', ft_mtrx_path,
-                            '--max_num_docs', num_ontopic_docs]
+                            '--max_num_docs', str(num_ontopic_docs)]
         subprocess.run(pubmed_doc_cmd, check=True)
     
         ### Download offtopic documents ###
-        print('\n','*'*50,'\n'+'obtaining labeled off-topic documents','\n','*'*50,'\n')
+        print('\n','*'*50,'\nobtaining labeled off-topic documents\n','*'*50,'\n')
         pubmed_offtopic_cmd = [
             'python', 'get_offtopic_or_unlabeled_docs.py',
                            '--topic',  topic,
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         subprocess.run(pubmed_offtopic_cmd, check=True)
     
         ### Download unlabeled documents ###
-        print('\n', '*'*50, '\n'+ 'obtaining unlabeled documents', '\n', '*'*50, '\n')
+        print('\n', '*'*50, '\nobtaining unlabeled documents\n', '*'*50, '\n')
         pubmed_unlabeled_cmd = [
             'python', 'get_offtopic_or_unlabeled_docs.py',
                             '--topic',  topic,
@@ -209,7 +209,7 @@ if __name__ == '__main__':
         if args.use_original_for_stage_two_training: # Original PubMed-downloaded data
             path = f'{direct}/{topic}_original_feature_matrix_path.txt' 
             path_to_feature_matrix_path = path
-        elif args.use_stage_one_predictions:  # NB-labeled on-topic (ground truth labels) 
+        else: #args.use_stage_one_predictions:  # NB-labeled on-topic (ground truth labels) 
             feature_matrix_path = f'{direct}/NBC_test_docs_pred_ontopic_{topic}.csv' 
 
     # Inference Time / Deploy Model

@@ -72,7 +72,7 @@ This is the transformer-based language model that is fine-tuned to classify docu
 This runs the entire pipeline to download on-topic (get_pubmed_docs.py) and off-topic (get_offtopic_or_unlabeled_docs.py) documents, prompting the user for certain inputs such as the topic name and number of documents. It then runs the document classification (pytorch_document_classifier)
 Example Usage (Downloading Documents):
 ```
-python run_document_classifier.py --topic heart \
+python run_document_classifier.py --topic eye \
                                   --num_ontopic_topic_docs 1000 \
                                   --num_offtopic_docs 1000 \
                                   --num_unlabeled_docs 1000 \
@@ -80,85 +80,19 @@ python run_document_classifier.py --topic heart \
 ```
 Example Usage (Train Stage 1 Classifier / Naive Bayes Classifier)
 ```
-python run_document_classifier.py --topic heart \
+python run_document_classifier.py --topic eye \
                                   --train_stage_one_classifier \
 ```
 Example Usage (Train Stage 2 Classifier / Fine Tune the Pre-Trained Transformer Language Model)
 ```
-python run_document_classifier.py --topic heart \
+python run_document_classifier.py --topic eye \
                                   --train_stage_two_classifier \
                                   --use_stage_one_predictions \
-
-Example Usage (Train Stage 3 Classifier / Fine Tune the Pre-Trained Transformer Language Model)
 ```
-python run_document_classifier.py --topic heart \
-                                  --train_stage_three_classifier \
-
-
+Example Usage (Deploy Stage 1 and 2 Classifiers)
 ```
-Example Usage (Deploy Stage 1, 2, & 3 Classifiers)
-```
-python run_document_classifier.py --topic heart \
+python run_document_classifier.py --topic eye \
                                   --run_stage_one_classifier \
                                   --run_stage_two_classifier \
-                                  --run_stage_three_classifier \
+                                  --use_stage_one_predictions \
 ```
-
-## Next steps
-### Index the documents with ElasticSearch (include ground truth and predicted on-topic documents)
-```
-python index_documents.py --topic heart \
-                          --ground_truth \
-                          --predicted \
-                          --elastic_search
-```
-
-### Obtain a list of entities to search for (e.g., proteins)
-Search by GO term
-```
-python get_entities.py --topic heart \
-                       --entity_type proteins
-                       --go_terms GO:12345,GO:67890 \
-```
-
-Search entire human proteome
-```
-python get_entities.py --topic heart \
-                       --entity_type proteins \
-                       --human_proteome \
-```
-
-Search entire genome (Note: use keyword or gene2pubmed?)
-```
-python get_entities.py --topic heart \
-                       --entity_type genes \
-                       --human_genome \
-```
-
-
-### Count frequency of entities within the topics
-```
-python count_entities.py --topic heart \
-                         --entity_type proteins \
-                         --human_genome
-                         --ground_truth_docs \
-                         --predicted_docs \
-```
-
-
-Obtain a background/baseline of off-topic documents (e.g., all human proteins vs. background of non-heart documents)
-```
-python count_entities.py --topic heart \ 
-                         --entity_type proteins \
-                         --human_proteome \
-```
-
-### Compute final scores of associations between the entity (e.g., protein) and topic (e.g., organ)
-Compute an association of the protein frequencies within the topic of interest and within the off-topic category. Then, compare the two to find protein enrichment. 
-```
-python compute_score.py --topic heart \
-                        --entity_type proteins \
-                        --human_proteome \
-```
-
-Generate plots of frequency over year?

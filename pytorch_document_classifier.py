@@ -18,7 +18,7 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 
 # Sklearn
-from sklearn.metrics import precision_recall_fscore_support, brier_score_loss, classification_report
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix, ConfusionMatrixDisplay, brier_score_loss, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from sklearn.utils.class_weight import compute_class_weight
@@ -114,9 +114,9 @@ def compute_metrics(logits, labels, num_labels):
     precision, recall, f1, _ = precision_recall_fscore_support(
                                   labels, predictions, average='macro') # Dylan, question?
     target_names = [str(label) for label in range(num_labels)]
-    print('num_labels', num_labels)
-    print('labels', labels)
-    print('target_names', target_names)
+    #print('num_labels', num_labels)
+    #print('labels', labels)
+    #print('target_names', target_names)
     conf_matrix = classification_report(labels, 
                                     predictions, 
                                     target_names=target_names) # if number of classes does not match target_names size, it may be because there are not any examples predicted correctly in a certain class
@@ -158,6 +158,7 @@ class DocumentClassifier:
         self.topic = topic
         self.out_dir = f'output/{topic}'
         self.stage_num = stage_num
+        
         
    ## fix for multi class
     def plot_probability_calibration_curve(logits, labels, model_name):
@@ -291,7 +292,6 @@ class DocumentClassifier:
             for epoch in range(epochs):
                 total_train_loss, total_val_loss = 0, 0
                 train_logits, train_labels = [], []
-                val_logits, val_labels = [], []
 
                 ''' 
                 Training
@@ -317,6 +317,7 @@ class DocumentClassifier:
                 Testing/Validation
                 '''
                 model.eval()
+                val_logits, val_labels = [], []
                 val_examples, val_predicted_labels = [], []
                 with torch.no_grad():
                     for val_batch_num, val_batch in enumerate(eval_dataloader):
@@ -343,7 +344,7 @@ class DocumentClassifier:
                   
                 # Export examples (validation set, positive predicted subset of val. set)
                 val_set = pd.DataFrame({'abstract':val_examples, 
-                                        'true_label':val_labels, 
+                                        'labels':val_labels, 
                                         'predicted_label':val_predicted_labels,})
                 val_set.to_csv(f'{self.out_dir}/{self.topic}_val_set_epoch_{epoch}.csv', 
                                index=False)
@@ -381,9 +382,16 @@ class DocumentClassifier:
                 print(f'Epoch {epoch} | Training Loss: {avg_train_loss} | Validation Loss: {avg_val_loss}')
                 if avg_val_loss < best_val_loss:
                     best_val_loss = avg_val_loss
-                    model_path = f'output/epoch_{epoch}_{model_name}_{epochs}_epochs_{num_labels}_classes_{model_name_suffix}'
+                    model_path = f'{self.out_dir}/epoch_{epoch}_{model_name}_{epochs}_epochs_{num_labels}_classes_{model_name_suffix}'
                     torch.save(model.state_dict(), model_path)
                     
+                    # Confusion matrix
+                    cm = confusion_matrix(val_labels, val_predicted_labels)
+                    fig, ax = plt.subplots()
+                    ConfusionMatrixDisplay(cm).plot(ax=ax)
+                    plt.savefig(f'{self.out_dir}/LM_confusion_matrix_{self.topic}_{model_name_suffix}_epoch_{epoch}.png')
+                    plt.close(fig)
+        
 
 
         # Save logits (predictions, almost) and labels (true answers)
@@ -421,3 +429,6 @@ class DocumentClassifier:
         self.train_embeddings = train_embeddings
         self.val_embeddings = val_embeddings
      
+    
+
+        

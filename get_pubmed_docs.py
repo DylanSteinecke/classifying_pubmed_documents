@@ -58,7 +58,7 @@ def parse_mesh_xml(year=-1):
     return root
 
 
-def align_mesh_trees_with_terms(root, mesh_roots = ('A','C','F03')):
+def align_mesh_trees_with_terms(root, mesh_roots = ('A','C','F03','G')):
     print('Aligning MeSH tree numbers with MeSH terms...')
     name_to_id, id_to_name, id_to_tree, tree_to_id, name_to_tree, tree_to_name = {},{},{},{},{},{}
     all_tree_numbers = list()
