@@ -149,9 +149,9 @@ def retrieve_ontopic_pmids(categories_of_terms,
                 category_pmids = category_pmids[:max_num_pmids]
                 print('Cutting off PMIDs at',max_num_pmids,'\n')
                 break
-                                
-        print(f'Category #{cat_num}: {len(category_pmids)} PMIDs')
-        categories_of_pmids.append(category_pmids)
+        
+        print(f'Category #{cat_num}: {len(set(category_pmids))} PMIDs')
+        categories_of_pmids.append(list(set(category_pmids)))
             
     with open(cat_of_pmid_path, 'w') as fout:
         json.dump(categories_of_pmids, fout)
@@ -349,9 +349,9 @@ if __name__ == '__main__':
     topic = args.topic
     get_docs_on_pubmed = args.get_docs_on_pubmed
     get_pmids_via_mesh = args.get_pmids_via_mesh 
-    ft_mtrx_pth = f'output/feature_matrix_{topic}.csv'  # specify if you are retrieving abstracts and titles
-    categories_of_pmids_path = f'output/category_of_pmids_{topic}.csv' # specify if retrieving PMIDs via MeSH
-    pmid_to_categories_path = f'output/pmid_to_category_{topic}.json'  # specify if not retreiving PMIDs via MeSH or to save a new one
+    ft_mtrx_pth = f'output/{topic}/feature_matrix_{topic}.csv'  # specify if you are retrieving abstracts and titles
+    categories_of_pmids_path = f'output/{topic}/category_of_pmids_{topic}.csv'# specify if retrieving PMIDs via MeSH
+    pmid_to_categories_path = f'output/{topic}/pmid_to_category_{topic}.json'# specify if not retreiving PMIDs via MeSH or to save a new one
     max_num_docs = args.max_num_docs              # maximum number of documents
     get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
     get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs     
