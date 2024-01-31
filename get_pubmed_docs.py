@@ -45,8 +45,11 @@ def download_mesh_xml(year=-1):
         year = datetime.now().year
     url = f'https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc{year}.xml'
     dest = f'input/desc{year}.xml'
-    urllib.request.urlretrieve(url, dest);
-    print('Download complete!')
+    if os.path.exists(dest):
+        print('Already downloaded')
+    else:
+        urllib.request.urlretrieve(url, dest);
+        print('Download complete!')
 
 def parse_mesh_xml(year=-1):
     print('Parsing MeSH XML...')
@@ -332,20 +335,10 @@ if __name__ == '__main__':
     parser.add_argument('--topic', '-t',
                         type=str, default='hf', 
                         help='the name of the topic you are studying (you should have run the first pubmed API with this topic name, and the file should be available)')
-    parser.add_argument('--download_mesh_tree', '-d',
-                       action='store_true', default=False)
-    parser.add_argument('--categories', '-c',
-                       type=str, default='input/topic_tree_numbers.json')
     parser.add_argument('--get_pmids_via_mesh', '-gp',
                        action='store_true', default=False)
     parser.add_argument('--get_docs_on_pubmed', '-gd',
                        action='store_true', default=False)
-    parser.add_argument('--cats_of_pmids', '-pmids',
-                        type=str, default='output/category_of_pmids.json')
-    parser.add_argument('--pmid_to_cat', '-pc',
-                        type=str, default='output/pmid_to_category.json')
-    parser.add_argument('--ft_mtrx_pth', '-ft',
-                        type=str, default='output/feature_matrix.csv')
     parser.add_argument('--max_num_docs', '-max',
                         type=int, default=99999999999999)
     parser.add_argument('--get_offtopic_docs', '-off',
@@ -353,49 +346,44 @@ if __name__ == '__main__':
     parser.add_argument('--get_unlabeled_docs', '-unlab',
                    action='store_true', default=False)
     args = parser.parse_args()
+    topic = args.topic
     get_docs_on_pubmed = args.get_docs_on_pubmed
     get_pmids_via_mesh = args.get_pmids_via_mesh 
-    feature_matrix_outpath = args.ft_mtrx_pth     # specify if you are retrieving abstracts and titles
-    download_mesh_tree = args.download_mesh_tree # specify if you have not downloaded the latest MeSH ontology
-    categories_path = args.categories             # specify if retreiving PMIDs via MeSH, (lists of lists of tree numbers, descendants are auto included)
-    categories_of_pmids_path = args.cats_of_pmids # specify if retrieving PMIDs via MeSH
-    pmid_to_categories_path = args.pmid_to_cat    # specify if not retreiving PMIDs via MeSH or you want to save a new one
+    ft_mtrx_pth = f'output/feature_matrix_{topic}.csv'  # specify if you are retrieving abstracts and titles
+    categories_of_pmids_path = f'output/category_of_pmids_{topic}.csv' # specify if retrieving PMIDs via MeSH
+    pmid_to_categories_path = f'output/pmid_to_category_{topic}.json'  # specify if not retreiving PMIDs via MeSH or to save a new one
     max_num_docs = args.max_num_docs              # maximum number of documents
     get_labeled_docs = args.get_offtopic_docs     # specify if you want known offtopic docs
-    get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs 
-    topic = args.topic
+    get_unlabeled_docs = args.get_unlabeled_docs  # specify if you want unknown topic docs     
+    categories_path = f'input/{topic}_tree_numbers.json'# specify if retreiving PMIDs via MeSH, (lists of lists of tree numbers, descendants are auto included)
     if not os.path.exists(f'output/{topic}'):
         os.makedirs(f'output/{topic}')
 
     if get_pmids_via_mesh:        
         ### Initial download of all of MeSH (Run once)
-        if download_mesh_tree:
-            try:
-                download_mesh_xml()
-                root = parse_mesh_xml()
-            #except:
-            #    last_year = datetime.now().year-1
-            #    print(f"This year's MeSH file didn't work. Trying last year {last_year}")
-            #    download_mesh_xml(year=last_year)
-            #    root = parse_mesh_xml(year=last_year)
-            except: 
-                next_year = datetime.now().year+1
-                print(f"This year's MeSH file didn't work. Trying next year {next_year}")
-                download_mesh_xml(year=next_year)
-                root = parse_mesh_xml(year=next_year)
-                    
-            _, _, _ = align_mesh_trees_with_terms(root)
+        try:
+            download_mesh_xml()
+            root = parse_mesh_xml()
+            print('Done trying to download MeSH tree')
+        except: 
+            next_year = datetime.now().year+1
+            print(f"This year's MeSH file didn't work. Trying next year {next_year}")
+            download_mesh_xml(year=next_year)
+            root = parse_mesh_xml(year=next_year)
+            print('Done trying to download MeSH tree')
+
+        _, _, _ = align_mesh_trees_with_terms(root)
 
         # Identify categories of study
         tree_to_term = json.load(open('output/tree_to_name.json'))
         seed_tree_numbers = json.load(open(categories_path))  # Categories to study 
         seed_terms = map_seed_tree_numbers_to_seed_terms(seed_tree_numbers, tree_to_term)  # Collects descendant terms
 
-        # Download the categories' PubMed IDs via an API
+        # Download the PubMed IDs of the categories via an API
         retrieve_ontopic_pmids(seed_terms, 
-                                      categories_of_pmids_path,
-                                      pmid_to_categories_path,
-                                      max_num_docs) 
+                               categories_of_pmids_path,
+                               pmid_to_categories_path,
+                               max_num_docs) 
     
     if get_docs_on_pubmed:
         print('pmid_to_categories_path', pmid_to_categories_path)
@@ -418,6 +406,3 @@ if __name__ == '__main__':
                                     verbose=True) 
         
         
-        
-        
-        # remove response text
