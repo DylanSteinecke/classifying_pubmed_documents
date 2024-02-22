@@ -378,7 +378,9 @@ if __name__ == '__main__':
         tree_to_term = json.load(open('output/tree_to_name.json'))
         seed_tree_numbers = json.load(open(categories_path))  # Categories to study 
         seed_terms = map_seed_tree_numbers_to_seed_terms(seed_tree_numbers, tree_to_term)  # Collects descendant terms
+        seed_terms = [list(set(category_of_terms)) for category_of_terms in seed_terms]
 
+        
         # Download the PubMed IDs of the categories via an API
         retrieve_ontopic_pmids(seed_terms, 
                                categories_of_pmids_path,
